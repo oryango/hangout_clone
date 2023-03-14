@@ -5,9 +5,36 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  padding: 0;
+  background: #f2f6f8
 }
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
+}
+
+
+/*  LOGIN CONTAINER  */
+
+.login-container {
+  display: flex;
+  flex-direction: column;
+  margin: 7% auto;
+  padding: 3% 5%;;
+  width: 40%;
+  background: #fff;
+  border-radius: 0.357rem;
+  -webkit-box-shadow: 0 4px 8px 0 rgb(34 41 47 / 12%);
+  box-shadow: 0 4px 8px 0 rgb(34 41 47 / 12%);
+}
+
+.register-link {
+  margin: 1%;
+  /*color: #3b7ead;*/
+}
+
+.register-link:hover {
+  color: #6a6a99;
 }
