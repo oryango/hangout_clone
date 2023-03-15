@@ -11,6 +11,13 @@ const UserSchema =  new Schema({
   password: {
     type: String, required: true, trim: true,
   },
+  firstName: {
+    type: String, trim: true,
+  },
+  lastName: {
+    type: String, trim: true,
+  },
+
 });
 
 async function generateHash(password) {
@@ -30,6 +37,15 @@ UserSchema.pre('save', function preSave(next) {
       return next(error);
     });
   }
+
+  if(user.$isNew){
+    return generateHash(user.password).then(hash => {
+      user.password = hash;
+      return next();
+    }).catch(error => {
+      return next(error);
+    });
+  }
   return next();
 });
 
@@ -37,9 +53,19 @@ UserSchema.methods.comparePassword = async function comparePassword(candidatePas
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-
 UserSchema.statics.verify = async function verify({email, password}) {
-	return await this.findOne({email, password}).exec();
+  const hash = await generateHash(password)
+	const user = await this.findOne({email}).exec();
+  try {
+    if(bcrypt.compare(user.password, hash)) {
+      return user;
+    } else {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+
 };
 
 module.exports = mongoose.model('users', UserSchema);

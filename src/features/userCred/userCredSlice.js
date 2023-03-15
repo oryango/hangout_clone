@@ -1,5 +1,7 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { verifyUserCred } from "./userCredAPI";
+import { verifyUserCred, createUser } from "./userCredAPI";
+import validator from "validator";
+
 
 const initialState = {
   email: "testing",
@@ -10,15 +12,72 @@ const initialState = {
 export const verifyLogin = createAsyncThunk(
 	"userCred/verifyLogin",
 	async ({email, password}) => {
-		const response = await verifyUserCred({email, password});
-		return response;
+
+		let errors = []
+    const options = { ignore_whitespace: true }
+
+    if(validator.isEmpty(email, options)) {
+      errors.push("Email field is required") 
+    } else {
+      if(!validator.isEmail(email))
+       	errors.push("Please input a valid email address")
+    }
+
+    if(validator.isEmpty(password, options)) {
+      errors.push("Password field is required")
+    }
+
+    if(errors.length == 0) {
+    	const response = await verifyUserCred({email, password});
+			return response;
+    } else {
+    	const data = {state: "error_found", errors}
+    	return data
+    }
+		
 	}
 );
 
 export const createAccount = createAsyncThunk(
 	"userCred/createAccount",
-	async ({}) => {
-		
+	async (data) => {
+
+		let errors = []
+		const options = { ignore_whitespace: true }
+
+    if(validator.isEmpty(data.firstName, options)) {
+      errors.push("First name field is required") 
+    }
+    if(validator.isEmpty(data.lastName, options)) {
+      errors.push("Last name field is required") 
+    }
+
+    if(validator.isEmpty(data.email, options)) {
+      errors.push("Email field is required") 
+    } else {
+      if(!validator.isEmail(data.email))
+        errors.push("Please input a valid email address")
+    }
+
+    if(validator.isEmpty(data.password, options))
+      errors.push("Password field is required")
+
+    if(validator.isEmpty(data.passwordConfirm, options)) {
+      errors.push("Confirm password is field is required")
+    }
+    else {
+    	if(data.password	!== data.passwordConfirm) 
+    			errors.push("Passwords do not match")
+    }
+
+    if(errors.length == 0) {
+    	const response = await createUser(data);
+			return response;
+    } else {
+    	const data = {state: "error_found", errors}
+    	return data
+    }
+
 	}
 );
 

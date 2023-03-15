@@ -5,7 +5,6 @@ import {
 } from './userCredSlice';
 import { useDispatch } from 'react-redux';
 import './Login.css';
-import validator from "validator";
 
 export function Login() {
   const dispatch = useDispatch()
@@ -16,28 +15,13 @@ export function Login() {
 
   const submitForm = async (e) => {
     e.preventDefault()
-    
-    setError([])
-    const options = { ignore_whitespace: true }
 
-    if(validator.isEmpty(email, options)) {
-      const newError = email
-      setError(errors => [...errors, "Email field is required"]) 
-    } else {
-      if(!validator.isEmail(email))
-        setError(errors => [...errors, "Please input a valid email address"])
-    }
+    const verified = await dispatch(verifyLogin({email, password}));
 
-    if(validator.isEmpty(password, options))
-      setError(errors => [...errors,  "Password is field is required"])
-      return
-
-    if(errors.length == 0) {
-      const verified = await dispatch(verifyLogin({email, password}));
-
-      verified.payload !== null ? 
-        dispatch(loggedIn({email, password})) : 
-        setError(["Incorrect email and/or password. Please try again..."])
+    if(verified.payload.state === "error_found") {
+      setError(verified.payload.errors)
+    } else if (verified.payload.state === "success") {
+      dispatch(loggedIn({email, password}))
     }
   }
 

@@ -18,6 +18,14 @@ code {
 
 /*  LOGIN CONTAINER  */
 
+.blur-background {
+  background-color: rgba(242, 246, 248, 0.3);
+  /*filter: blur(1.5rem);*/
+  position: absolute;
+  z-index: 100;
+  width: 100%;
+}
+
 .login-container {
   display: flex;
   flex-direction: column;
@@ -37,4 +45,8 @@ code {
 
 .register-link:hover {
   color: #6a6a99;
+}
+
+.main-wrapper {
+  filter: blur(0.8rem);
 }

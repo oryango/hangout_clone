@@ -1,5 +1,6 @@
 import React from "react";
-import LoginContainer from "./components/LoginContainer"
+import { LoginContainer } from "./components/LoginContainer";
+import { ChatContainer } from "./components/ChatContainer";
 import './App.css';
 
 import {
@@ -15,6 +16,7 @@ function App() {
     {
       !logInStatus ? <LoginContainer /> : null
     }
+      <ChatContainer />
     </div>
   );
 };

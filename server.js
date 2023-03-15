@@ -13,21 +13,15 @@ const mongoString = "mongodb+srv://admin:debtappearancetheorist@hangout.sobneka.
 
 const io = require("socket.io")(http);
 
-
 main()
 
 async function main() {
 	await mongoose.connect(
 		mongoString, {
-			useNewUrlParser: true,
+		useNewUrlParser: true,
   		useUnifiedTopology: true,
   	});
 
-	const db = mongoose.connection;
-	db.on("error", console.error.bind(console, "connection error: "));
-	db.once("open", function () {
-	  console.log("Connected successfully");
-	});
 	app.use(bodyParser.json());
 	app.use(express.static(__dirname + "/build"))
 
@@ -35,6 +29,28 @@ async function main() {
 	app.post("/verify_login", async (req, res) => {		
 		const verify = await UserModel.verify(req.body);
 		return res.status(200).json(verify);
+	});
+
+	app.post("/create_User", async (req, res) => {
+		try {
+			const result = await UserModel.create(req.body);
+
+			const body = {state: "success"}
+
+			return res.status(200).json(body);
+
+		} catch (err) {
+			const body = {state: "error_found", errors: []}
+			console.log(err)
+			const errors = Object.keys(err.keyValue)
+			if(errors[0] === "email") {
+				body.errors.push("Email already used")
+			} else {
+				body.errors.push("Error please try again later")
+			}
+
+			return res.status(200).json(body);
+		}
 	});
 
 	app.get("*", (req, res) => {
