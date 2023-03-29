@@ -2,13 +2,16 @@ import React, { useState } from 'react';
 import {
   loggedIn,
   verifyLogin,
+  fullNameSelector,
 } from './userCredSlice';
-import { useDispatch } from 'react-redux';
+import { setsId } from "../messenger/messengerSlice";
+import { startMedia, logSocket } from "../videoCall/videoCallSlice";
+import { useDispatch, useSelector } from 'react-redux';
 import './Login.css';
 
 export function Login() {
   const dispatch = useDispatch()
-
+  const name = useSelector(fullNameSelector)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setError] = useState([]);
@@ -21,7 +24,10 @@ export function Login() {
     if(verified.payload.state === "error_found") {
       setError(verified.payload.errors)
     } else if (verified.payload.state === "success") {
-      dispatch(loggedIn({email, password}))
+      dispatch(loggedIn(verified.payload.body))
+      dispatch(setsId(verified.payload.body))
+      dispatch(startMedia())
+      dispatch(logSocket({name}))
     }
   }
 

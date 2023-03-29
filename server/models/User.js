@@ -2,6 +2,17 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 const bcrypt = require('bcrypt');
 
+const conversationSchema = new Schema({
+  chatId: {
+    type: mongoose.ObjectId, required: true
+  },
+  name: {
+    type: String, required: true
+  },
+  type: {
+    type: String, required: true
+  },
+});
 
 const UserSchema =  new Schema({
   email: {
@@ -17,7 +28,7 @@ const UserSchema =  new Schema({
   lastName: {
     type: String, trim: true,
   },
-
+  conversationList: [conversationSchema],
 });
 
 async function generateHash(password) {
@@ -54,10 +65,9 @@ UserSchema.methods.comparePassword = async function comparePassword(candidatePas
 };
 
 UserSchema.statics.verify = async function verify({email, password}) {
-  const hash = await generateHash(password)
 	const user = await this.findOne({email}).exec();
   try {
-    if(bcrypt.compare(user.password, hash)) {
+    if(await bcrypt.compare(password, user.password)) {
       return user;
     } else {
       return null;
@@ -65,6 +75,51 @@ UserSchema.statics.verify = async function verify({email, password}) {
   } catch {
     return null;
   }
+
+};
+
+UserSchema.statics.updateUsersDirect = async function updateUsersDirect(data) {
+  const { room, senderName, sendeeName } = data
+  const { _id, users } = room
+  for await (const user of users){
+    const name = senderName === user.name ? sendeeName : senderName
+    const userDocument = await this.findOne({_id: user.userId})
+    console.log(userDocument)
+
+    userDocument.conversationList.push({
+      chatId: _id,
+      type: "direct",
+      name: name
+    })
+
+    await userDocument.save();
+
+    console.log(userDocument) 
+
+  }
+
+};
+
+UserSchema.statics.updateUsersGroup = async function updateUsersGroup(data) {
+  const { name, room } = data
+  const { _id, users } = room
+
+  for await (const user of users){
+    const userDocument = await this.findOne({_id: user.userId})
+    console.log(userDocument)
+
+    userDocument.conversationList.push({
+      chatId: _id,
+      type: "direct",
+      name: name
+    })
+
+    await userDocument.save();
+
+    console.log(userDocument) 
+
+  }
+
 
 };
 

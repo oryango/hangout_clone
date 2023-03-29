@@ -4,9 +4,12 @@ import validator from "validator";
 
 
 const initialState = {
-  email: "testing",
-  password: "",
-  loggedIn: false
+  email: null,
+  id: null,
+  firstName: null,
+  lastName: null,
+  conversationList: [],
+  loggedIn: false,
 };
 
 export const verifyLogin = createAsyncThunk(
@@ -86,18 +89,40 @@ export const userCredSlice = createSlice({
 	initialState,
 	reducers: {
 		loggedIn: (state, action) => {
-				const { email, password } = action.payload;
-	      state.email = email;
-	      state.password = password;
-	      state.loggedIn = true;
-	    },
+      console.log(action.payload)
+			const { 
+        email,
+        _id, 
+        conversationList, 
+        firstName, 
+        lastName } = action.payload;
+
+      state.email = email;
+      state.id = _id;
+      state.conversationList = conversationList;
+      state.firstName = firstName;
+      state.lastName = lastName;
+      state.loggedIn = true;
+    },
+
+    signOutUser: (state, action) => {
+      state.email = null;
+      state.id = null;
+      state.firstName = null;
+      state.lastName = null;
+      state.conversationList = [];
+      state.loggedIn = false;
+    },
 	},
 });
 
-export const {loggedIn} = userCredSlice.actions;
+export const {loggedIn, signOutUser} = userCredSlice.actions;
 
 export default userCredSlice.reducer;
 
+export const idSelector =  (state) => state.userCred.id
 export const emailSelector = (state) => state.userCred.email;
-
+export const conversationSelector = (state) => state.userCred.conversationList;
+export const fullNameSelector = (state) => {return `${state.userCred.firstName} ${state.userCred.lastName}`}
 export const loggedInSelector = (state) => state.userCred.loggedIn;
+

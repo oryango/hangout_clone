@@ -2,13 +2,17 @@ import React, { useState } from 'react';
 import {
   loggedIn,
   createAccount,
+  fullNameSelector,
 } from './userCredSlice';
-import { useDispatch } from 'react-redux';
+import { setsId } from "../messenger/messengerSlice";
+import { startMedia, logSocket } from "../videoCall/videoCallSlice";
+
+import { useDispatch, useSelector } from 'react-redux';
 import './Login.css';
-import validator from "validator";
 
 export function Register() {
 	const dispatch = useDispatch()
+  const name = useSelector(fullNameSelector)
 
 	const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -36,7 +40,11 @@ export function Register() {
     if(created.payload.state === "error_found") {
       setError(created.payload.errors)
     } else if (created.payload.state === "success") {
-    	dispatch(loggedIn({email, password}))
+    	dispatch(loggedIn(created.payload.body))
+      dispatch(setsId(created.payload.body))
+      dispatch(startMedia())
+      dispatch(logSocket({name}))
+
     }
 
       /*created.payload !== null ? 
@@ -101,7 +109,7 @@ export function Register() {
           </input>
         </label>
         {errors.map((error)=> {return <h2 className="login-error"> {error} </h2>})}
-        <button className="login-button" type="submit">Log in</button>
+        <button className="login-button" type="submit">Register</button>
       </form>   
     </> 
 	)

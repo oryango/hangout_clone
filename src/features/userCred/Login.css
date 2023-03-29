@@ -4,6 +4,8 @@
 
 .login-input-container {
 	margin: 2% auto;
+	display: block;
+	width: 90%;
 }
 
 .login-labels {
