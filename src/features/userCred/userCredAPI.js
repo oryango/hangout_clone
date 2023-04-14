@@ -28,3 +28,16 @@ export async function createUser(data) {
 	const	body = await response.json();
 	return body;
 }
+
+export async function sortRooms(data) {
+	const response = await fetch(
+		"/sort_rooms",
+		{
+			method : "POST",
+			headers: { "Content-Type": "application/json"},
+			body: JSON.stringify(data)
+		}
+	);
+	const	body = await response.json();
+	return body;
+}

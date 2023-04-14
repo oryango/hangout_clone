@@ -1,4 +1,6 @@
 import React from "react";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { LoginContainer } from "./components/LoginContainer";
 import { ChatContainer } from "./components/ChatContainer";
 import { SocketComponent } from "./features/videoCall/SocketComponent";
@@ -13,6 +15,16 @@ function App() {
   
   return (
     <div className="App">
+      <ToastContainer 
+        position="top-right"
+        autoClose={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss={false}
+        draggable
+        theme="light"
+      />
       <SocketComponent />
     {
       !logInStatus ? <LoginContainer /> : null

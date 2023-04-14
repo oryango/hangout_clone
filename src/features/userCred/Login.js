@@ -3,6 +3,8 @@ import {
   loggedIn,
   verifyLogin,
   fullNameSelector,
+  idSelector,
+  getSortedRooms,
 } from './userCredSlice';
 import { setsId } from "../messenger/messengerSlice";
 import { startMedia, logSocket } from "../videoCall/videoCallSlice";
@@ -12,6 +14,7 @@ import './Login.css';
 export function Login() {
   const dispatch = useDispatch()
   const name = useSelector(fullNameSelector)
+  const userId = useSelector(idSelector)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setError] = useState([]);
@@ -24,10 +27,12 @@ export function Login() {
     if(verified.payload.state === "error_found") {
       setError(verified.payload.errors)
     } else if (verified.payload.state === "success") {
-      dispatch(loggedIn(verified.payload.body))
+      await dispatch(loggedIn(verified.payload.body))
+      dispatch(getSortedRooms({conversationList: verified.payload.body.conversationList}))
       dispatch(setsId(verified.payload.body))
       dispatch(startMedia())
-      dispatch(logSocket({name}))
+      const userName = `${verified.payload.body.firstName} ${verified.payload.body.lastName}`
+      dispatch(logSocket({name: userName, userId: verified.payload.body._id}))
     }
   }
 

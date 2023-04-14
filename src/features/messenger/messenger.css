@@ -412,6 +412,21 @@ img.shadow {
   background-image: url(https://user-images.githubusercontent.com/35243461/168796900-207c2e2a-4a21-4ef0-9dc7-fd82e3e20073.svg);
 }
 
+.add-user-container {
+  position: absolute;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  margin: 8% auto;
+  padding: 3% 5%;;
+  width: 95%;
+  background: #fff;
+  border-radius: 0.357rem;
+  -webkit-box-shadow: 0 4px 8px 0 rgb(34 41 47 / 12%);
+  box-shadow: 0 4px 8px 0 rgb(34 41 47 / 12%);
+  z-index: 100;
+}
+
 .svg36 {
   height: 36px;
   width: 36px;
@@ -482,6 +497,13 @@ img.shadow {
 .chat.chat-panel .left-chat-message, .chat.chat-panel .right-chat-message {
   padding: 0.5rem 1rem;
   max-width: 47%;
+}
+
+.close-btn {
+  padding: 1%;
+  position: absolute;
+  cursor: pointer;
+  margin: -4% 0 auto 87%;
 }
 
 .right-chat-message {
@@ -652,6 +674,7 @@ img.shadow {
   cursor: pointer;
 }
 
+
 .btn-left-side {
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
@@ -699,15 +722,26 @@ img.shadow {
 }
 
 .video-container{
-  width: 70vw;
+  width: 75vw;
   margin: auto;
-  height: calc(70vw / 16 * 9);
-  background: #343231;
+  height: calc(75vw / 16 * 9);
+  background: #232b2b;
 }
 
 .local-video {
   height: 100%;
   width: 100%;
+}
+
+.mini-video {
+  margin: 0;
+  height: calc(22vh - 1.5rem);
+  width: calc((22vh - 1.5rem) / 9 * 16);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.self {
   transform: rotateY(180deg);
 }
 
@@ -715,7 +749,7 @@ img.shadow {
   width: 100%;
   font-size: 5rem;
   text-align: center;
-  margin: calc(28% - 2.5rem) 0;
+  margin: calc(27% - 2rem) 0px;
   color: #faf9f6;
   display: inline-block;
   opacity: 0.8;
@@ -739,6 +773,61 @@ img.shadow {
   margin: auto;
   width: 100%;
 }
+
+.in-call {
+  position: relative;
+}
+
+.flex-container {
+  background: #232b2b;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  width: 75vw;
+  height: 22vh;
+  margin: 0.875rem auto;
+}
+
+.video-name-container {
+  background: rgba(0,0,0,0.3);
+  padding: 1%;
+  display: inline-block;
+  position: absolute;
+  margin: 1% 10%;
+  color: white;
+  border-radius: 4px;
+}
+
+.video-name {
+  display: inline;
+  margin: 0;
+}
+
+.mini-video-name-container {
+  color: white;
+  position: relative;
+  z-index: 100;
+  margin: 0 20%;
+  bottom: 25%;
+  display: inline-block;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  padding: 1% 4%;
+}
+
+.divider {
+  border-bottom: 1.5px solid #e4e6ef;
+  padding-bottom: 10% !important;
+}
+
+.overlay-container {
+  margin: 0;
+  padding: 100%;
+  position: absolute;
+}
+
 /*perfect scrollbar*/
 .ps-container {
   -ms-touch-action: none;

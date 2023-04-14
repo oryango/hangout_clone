@@ -14,6 +14,7 @@ import {
   pressedCreateConversation,
   signOutMessages,
 } from "./messengerSlice";
+import { signOutSocket } from "../videoCall/videoCallSlice"
 import { useSelector, useDispatch } from "react-redux";
 import userProfile from "../../images/user-profile.svg"
 
@@ -49,6 +50,7 @@ export function Contacts() {
   const signOut = () => {
     dispatch(signOutUser())
     dispatch(signOutMessages())
+    dispatch(signOutSocket())
   }
 
 	return(

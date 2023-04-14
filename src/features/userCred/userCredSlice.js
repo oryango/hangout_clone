@@ -1,14 +1,17 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
-import { verifyUserCred, createUser } from "./userCredAPI";
+import { verifyUserCred, createUser, sortRooms } from "./userCredAPI";
 import validator from "validator";
-
+import { Device } from '@twilio/voice-sdk';
 
 const initialState = {
   email: null,
   id: null,
   firstName: null,
   lastName: null,
-  conversationList: [],
+  unsortedConversationList: [], //{type, chatId, name}
+  conversationList: [], //{type, chatId, name}
+  phoneNumber: null,
+  device: null,
   loggedIn: false,
 };
 
@@ -40,6 +43,32 @@ export const verifyLogin = createAsyncThunk(
 		
 	}
 );
+
+export const getSortedRooms = createAsyncThunk(
+  "userCred/getSortedRooms",
+  async ({conversationList},{getState}) => {
+    const state = getState()
+    const response = await sortRooms({conversationList})
+    const sortedIds = []
+    response.body.sortedIds.forEach((id)=> { 
+     const contact = conversationList.find((unsortedId) => unsortedId.chatId == id._id)
+     sortedIds.push({name: contact.name, chatId: id._id, type: id.conversationType})
+    })
+    return {sortedIds}
+  }
+)
+
+export const getRoomName = createAsyncThunk(
+  "userCred/getRoomName",
+  async ({roomId},{getState}) => {
+    const state = getState()
+    const roomName = state.userCred.conversationList.find((conversation) => {
+      return conversation.chatId == roomId
+    })
+
+    return roomName.name
+  }
+)
 
 export const createAccount = createAsyncThunk(
 	"userCred/createAccount",
@@ -84,6 +113,18 @@ export const createAccount = createAsyncThunk(
 	}
 );
 
+export const hasRoom = createAsyncThunk(
+  "userCred/hasRoom",
+  async ({roomId}, {getState}) => {
+    const state = getState()
+    const filterRoom = state.userCred.conversationList.filter((conversation) => {
+      const { chatId } = conversation 
+      return chatId == roomId ? conversation : null
+    })
+    return filterRoom.length > 0 ? true : false
+  }
+)
+
 export const userCredSlice = createSlice({
 	name: "userCred",
 	initialState,
@@ -93,16 +134,67 @@ export const userCredSlice = createSlice({
 			const { 
         email,
         _id, 
-        conversationList, 
         firstName, 
-        lastName } = action.payload;
+        lastName,
+        phoneNumber,
+      } = action.payload;
 
       state.email = email;
       state.id = _id;
-      state.conversationList = conversationList;
       state.firstName = firstName;
       state.lastName = lastName;
+      state.phoneNumber = phoneNumber;
       state.loggedIn = true;
+    },
+
+    receivedToken: (state, action) => {
+      const { token } = action.payload
+      const device = new Device(token, {
+        codecPreferences: ["opus", "pcmu"],
+      })
+
+      device.on("registered", () => {
+        console.log("Device ready to receive calls")
+      })
+
+      device.on("error", (error) => {
+        console.log("Error " + error.message)
+      })
+
+      device.on("incoming", (call) => {
+        const { From } = call.parameters
+        console.log(From)
+      })
+
+      device.register()
+      state.device = device
+    },
+
+    newRoomAdded: (state, action) => {
+      const { query } = action.payload
+      console.log(query)
+      console.log(state.conversationList)
+      state.conversationList.push(query)
+    },
+
+    requestedPhone: (state, action) => {
+      state.phoneNumber = "requested"
+    },
+
+    reorderRooms: (state, action) => {
+      const { body } = action.payload
+      console.log(body)
+      let targetRoom
+      const filterRooms = state.conversationList.filter((conversation) => {
+        if(body.roomId != conversation.chatId) {
+          return true
+        } else {
+          targetRoom = conversation
+          return false
+        }
+      })
+      filterRooms.unshift(targetRoom)
+      state.conversationList = filterRooms
     },
 
     signOutUser: (state, action) => {
@@ -114,9 +206,16 @@ export const userCredSlice = createSlice({
       state.loggedIn = false;
     },
 	},
+  extraReducers: (builder) => {
+    builder
+      .addCase(getSortedRooms.fulfilled, (state, action) => {
+        const { sortedIds } = action.payload
+        state.conversationList = sortedIds
+      })
+    },
 });
 
-export const {loggedIn, signOutUser} = userCredSlice.actions;
+export const {loggedIn, receivedToken, newRoomAdded, requestedPhone, reorderRooms, signOutUser} = userCredSlice.actions;
 
 export default userCredSlice.reducer;
 
@@ -125,4 +224,4 @@ export const emailSelector = (state) => state.userCred.email;
 export const conversationSelector = (state) => state.userCred.conversationList;
 export const fullNameSelector = (state) => {return `${state.userCred.firstName} ${state.userCred.lastName}`}
 export const loggedInSelector = (state) => state.userCred.loggedIn;
-
+export const phoneSelector = (state) => state.userCred.phoneNumber;

@@ -29,6 +29,9 @@ const UserSchema =  new Schema({
     type: String, trim: true,
   },
   conversationList: [conversationSchema],
+  phoneNumber: {
+    type: String, default: "",
+  },
 });
 
 async function generateHash(password) {
@@ -81,46 +84,79 @@ UserSchema.statics.verify = async function verify({email, password}) {
 UserSchema.statics.updateUsersDirect = async function updateUsersDirect(data) {
   const { room, senderName, sendeeName } = data
   const { _id, users } = room
+  const userUpdateList = []
   for await (const user of users){
     const name = senderName === user.name ? sendeeName : senderName
     const userDocument = await this.findOne({_id: user.userId})
-    console.log(userDocument)
 
-    userDocument.conversationList.push({
+    const query = {
       chatId: _id,
       type: "direct",
       name: name
-    })
+    }
+
+    userDocument.conversationList.push(query)
 
     await userDocument.save();
 
-    console.log(userDocument) 
-
+    userUpdateList.push({userId: user.userId, query,})
   }
+  return userUpdateList
 
 };
 
 UserSchema.statics.updateUsersGroup = async function updateUsersGroup(data) {
-  const { name, room } = data
+  const { name, room, io } = data
   const { _id, users } = room
+  const userUpdateList = []
 
   for await (const user of users){
     const userDocument = await this.findOne({_id: user.userId})
-    console.log(userDocument)
-
-    userDocument.conversationList.push({
+    const query = {
       chatId: _id,
-      type: "direct",
+      type: "group",
       name: name
-    })
+    }
+    userDocument.conversationList.push(query)
 
     await userDocument.save();
-
-    console.log(userDocument) 
-
+    userUpdateList.push({userId: user.userId, query,})
   }
+  return userUpdateList
 
 
 };
+
+UserSchema.statics.updateUserSMS = async function updateUserSMS(data) {
+  const { room } = data
+  const { _id, users, destinationNumber } = room
+  const userUpdateList = []
+
+  for await (const user of users){
+    const userDocument = await this.findOne({_id: user.userId})
+
+    const query = {
+      chatId: _id,
+      type: "sms",
+      name: destinationNumber
+    }
+
+    userDocument.conversationList.push(query)
+
+    await userDocument.save();
+
+    userUpdateList.push({userId: user.userId, query,})
+  }
+  return userUpdateList
+
+}
+
+UserSchema.statics.requestPhone = async function requestPhone(data) {
+  const {userId} = data
+
+  const userDocument = await this.findOne({_id: userId})
+  userDocument.phoneNumber = "requested"
+  userDocument.save()
+}
 
 module.exports = mongoose.model('users', UserSchema);

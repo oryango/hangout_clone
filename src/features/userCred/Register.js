@@ -3,6 +3,8 @@ import {
   loggedIn,
   createAccount,
   fullNameSelector,
+  idSelector,
+  getSortedRooms,
 } from './userCredSlice';
 import { setsId } from "../messenger/messengerSlice";
 import { startMedia, logSocket } from "../videoCall/videoCallSlice";
@@ -13,7 +15,7 @@ import './Login.css';
 export function Register() {
 	const dispatch = useDispatch()
   const name = useSelector(fullNameSelector)
-
+  const userId = useSelector(idSelector)
 	const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,15 +43,12 @@ export function Register() {
       setError(created.payload.errors)
     } else if (created.payload.state === "success") {
     	dispatch(loggedIn(created.payload.body))
+      dispatch(getSortedRooms({conversationList: created.payload.body.conversationList}))
       dispatch(setsId(created.payload.body))
       dispatch(startMedia())
-      dispatch(logSocket({name}))
-
+      const userName = `${created.payload.body.firstName} ${created.payload.body.lastName}`
+      dispatch(logSocket({name: userName, userId: created.payload.body._id}))
     }
-
-      /*created.payload !== null ? 
-        dispatch(loggedIn({email, password})) : 
-        setError(["Incorrect email and/or password. Please try again..."])*/
   }
 
 	return (

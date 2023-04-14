@@ -9,6 +9,8 @@ import { useSelector, useDispatch } from "react-redux";
 import userProfile from "../../../images/user-profile.svg"
 import groupProfile from "../../../images/group.svg"
 import selfProfile from "../../../images/notes.svg"
+import smsProfile from "../../../images/sms.svg"
+
 
 export function ContactHeader({conversation}) {
 	const { name, chatId, type } = conversation;
@@ -30,7 +32,10 @@ export function ContactHeader({conversation}) {
 		<div className="chat-item d-flex pl-3 pr-0 pt-3 pb-3" data-link={chatId} onClick={()=> {loadContact()}}>
       <div className="w-100">
         <div className="d-flex pl-0">
-          <img className="rounded-circle shadow avatar-sm mr-3" src={type === "direct" ? userProfile : type === "group" ? groupProfile : selfProfile} />
+          <img className="rounded-circle shadow avatar-sm mr-3" src={
+            type === "direct" ? userProfile : 
+            type === "group" ? groupProfile : 
+            type === "sms" ? smsProfile : selfProfile} />
           <div>
             <p className="margin-auto fw-400 text-dark-75">{ name }</p>
             <div className="d-flex flex-row mt-1">

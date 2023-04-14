@@ -1,33 +1,74 @@
 import React, {useEffect} from "react";
+import useSound from 'use-sound'
+import notifSfx from '../../sounds/notification.mp3'
+import callSfx from '../../sounds/call.mp3'
+import { toast } from 'react-toastify';
 import {
+  createProducerTransport,
   socketSelector,
   deviceSelector,
   createdProducer,
   recvTransportSelector,
   remoteTrackFound,
   listenToProducer,
+  getRoom,
+  openedWebcam,
+  connectedConsumer,
+  videoToggleSelector,
+  audioToggleSelector,
+  consumerEnded,
 } from './videoCallSlice';
-import { fullNameSelector } from "../userCred/userCredSlice"
-import { receivedMessage, roomSelector } from "../messenger/messengerSlice";
+import { 
+  fullNameSelector, 
+  hasRoom, 
+  newRoomAdded, 
+  getRoomName, 
+  reorderRooms, 
+  receivedToken,
+} from "../userCred/userCredSlice"
+import { 
+  receivedMessage, 
+  roomSelector, 
+  inRoom, 
+  joinedRoom, 
+  loadActiveConversation 
+} from "../messenger/messengerSlice";
 import { useSelector, useDispatch } from 'react-redux';
 
 export function SocketComponent(argument) {
 	const socket = useSelector(socketSelector);
 	const device = useSelector(deviceSelector);
-	const roomId = useSelector(roomSelector)
   const name = useSelector(fullNameSelector)
+  const activeRoom = useSelector(roomSelector)
+  const videoEnabled = useSelector(videoToggleSelector)
+  const audioEnabled = useSelector(audioToggleSelector)
   const dispatch = useDispatch();
+  const [playMessage] = useSound(notifSfx);
+  const [playCall, { stop }] = useSound(callSfx);
   
+  const loadContact = ({roomId, roomName}) => {
+    const body = {
+      previousRoom: activeRoom,
+      newRoom: roomId
+    }
+
+    dispatch(joinedRoom({body, socket}))
+    dispatch(loadActiveConversation({
+      chatId: roomId, 
+      name: roomName
+    }))
+  }
+
   useEffect(() => {
     if(socket !== null) {
-      //messages socket
-      socket.on("new-message", (result) => {
-        dispatch(receivedMessage(result))
-      })
-
       //video call sockets
       socket.on("connect", () => {
         socket.emit("get-router-rtp-capabilities")
+      })
+
+      socket.on("log-in", ({token}) => {
+        console.log(token)
+        dispatch(receivedToken({token}))
       })
 
       socket.on("router-rtp-capabilities", async ({ routerRtpCapabilities }) => {
@@ -39,17 +80,17 @@ export function SocketComponent(argument) {
       	const transport = device.createSendTransport(params)
 
       	transport.on("connect", async({dtlsParameters}, callback, errback) => {
-          const data = {
+      		const response = await socket.emitWithAck("connect-producer-transport", {
             transportId: transport.id,
             dtlsParameters,
-          }
-      		const response = await socket.emitWithAck("connect-producer-transport", data);
+          });
           callback()
 
       	})
 
       	transport.on("produce", async({kind, rtpParameters}, callback, errback) => {
-      		
+          const {payload: roomId} = await dispatch(getRoom())
+          console.log(roomId)
       		const data = {
       			transportId: transport.id,
       			kind,
@@ -57,9 +98,7 @@ export function SocketComponent(argument) {
       			roomId,
             name,
       		}
-          console.log("producing "+ kind)
-
-
+          console.log("roomId: " + roomId)
       		const { id } = await socket.emitWithAck("produce", data);
 
       		callback(id)
@@ -68,7 +107,7 @@ export function SocketComponent(argument) {
       	transport.on("connectionstatechange", (state)=> {
       		switch (state) {
       			case "connecting":
-      				console.log("connecting")
+      				//console.log("connecting")
       				break
       			case "connected":
       				console.log("connected")
@@ -87,49 +126,50 @@ export function SocketComponent(argument) {
         let track 
         if(type === "video") {
           track = stream.getVideoTracks()[0]
+          stream.getAudioTracks()[0].stop()
+          dispatch(openedWebcam(track))
         } else {
           track = stream.getAudioTracks()[0]
+          stream.getVideoTracks()[0].stop()
         }
 				const producer = await transport.produce({ track })
+
 				dispatch(createdProducer({producer}))
 
       })
 
       socket.on("new-producer", ({producerIds}) => {
+        console.log("retrieving producers")
         if(producerIds !== null) {
           const { ids } = producerIds
+          console.log(ids)
           ids.forEach((id) => {
-            dispatch(listenToProducer({
-              name: id.name, 
-              socketId: id.socketId, 
-              producerId: id.producerId}))
+            dispatch(listenToProducer({name: id.name, socketId: id.socketId, producerId: id.producerId}))
           })
+        } else {
+          console.log("no one in call")
         }
-
       })
 
       socket.on("consumer-transport-created", async (data) => {
-        const { name, socketId, params } = data
-        console.log("transport created to consume")
+        const { name,socketId, params, producerId } = data
         const transport = device.createRecvTransport(params)
 
         transport.on("connect", async ({dtlsParameters}, callback, errback) => {
-          const data = {
+          const response = await socket.emitWithAck("connect-consumer-transport", {
             dtlsParameters,
-            transport: transport.id,
-          }
-
-          console.log("transport connected")
-          const response = await socket.emitWithAck("connect-consumer-transport", data)
+            transportId: transport.id,
+          })
           callback()
         })
 
         transport.on("connectionstatechange", (state) => {
           switch (state) {
             case "connecting":
-              console.log("connecting")
+              //console.log("connecting")
               break
             case "connected":
+              dispatch(connectedConsumer({transportId: transport.id}))
               console.log("connected")
               break
             case "failed":
@@ -140,11 +180,11 @@ export function SocketComponent(argument) {
               break
           }
         })
+
         const { rtpCapabilities } = device
-        const transportParams = await socket.emitWithAck("consume", { rtpCapabilities })
+        const transportParams = await socket.emitWithAck("consume", { rtpCapabilities, producerId, transportId: transport.id })
 
         const {
-          producerId,
           id,
           kind,
           rtpParameters,
@@ -160,12 +200,72 @@ export function SocketComponent(argument) {
           codecOptions,
         })
 
-        const stream = new MediaStream()
-        stream.addTrack(consumer.track)
-
-        dispatch(remoteTrackFound({consumer, name, socketId}))
+        dispatch(remoteTrackFound({consumer, name, socketId, transportId: transport.id}))
 
       })
+
+      socket.on("user-left", ({socketId}) => {
+        dispatch(consumerEnded({socketId}))
+      })
+
+      //messages socket
+      socket.on("new-message", async (result) => {
+        dispatch(receivedMessage(result))
+      })
+
+      socket.on("new-room-added", ({query}) => {
+        console.log("new-room-added")
+        dispatch(newRoomAdded({query}))
+      })
+      socket.on("notification-message", async ({body}) => {
+        const notInRoom = await dispatch(inRoom({roomId: body.roomId}))
+        const foundRoom = await dispatch(hasRoom({roomId: body.roomId}))
+
+        const activeHeader = document.querySelector(".chat-item.active")
+        let currentActiveRoom 
+        if(activeHeader !== null) {
+          activeHeader.classList.remove("active")
+          currentActiveRoom = activeHeader.getAttribute("data-link")
+        }
+
+        await dispatch(reorderRooms({body}))
+
+        const headers = document.querySelectorAll(".chat-item")
+        headers.forEach((header) => {
+          const chatId = header.getAttribute("data-link")
+          if(chatId == currentActiveRoom) {
+            header.classList.add("active")
+          }
+        })
+
+        if(foundRoom.payload && notInRoom.payload) {
+          playMessage()
+          const roomName = await dispatch(getRoomName({roomId: body.roomId}))
+          console.log(roomName)
+          toast(`New message from ${roomName.payload}`, {onClick: () => {
+            loadContact({roomName: roomName.payload, roomId: body.roomId})
+          }})
+        }
+      })
+
+      socket.on("call-started", async ({ roomId, roomName: groupName, callType }) => {
+        const foundRoom = await dispatch(hasRoom({roomId}))
+
+        if(foundRoom.payload) {
+          if(callType == "group") {
+            toast(`A user has joined a call in ${groupName}`, {onClick: () => {
+              loadContact({roomName: groupName, roomId})
+            }})
+          } else if (callType == "direct") {
+            playCall()
+            const roomName = await dispatch(getRoomName({roomId: roomId}))
+            toast(`${roomName.payload} is calling you`, {onClick: ()=> {
+              loadContact({roomName: roomName.payload, roomId})
+            }, onClose: () => stop(), hideProgressBar: false, autoClose: 30000,})
+          }
+        }
+      })
+  
     }
 
   }, [socket])

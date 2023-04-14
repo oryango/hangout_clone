@@ -2,19 +2,31 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import * as mediasoup from "mediasoup-client";
 import { io } from "socket.io-client";
 
+
+
 const initialState = {
-  device: null, // mediasoup-client device
-  socket: null, //socket io
-	micProducer: null, // producer for mic
+  device: null, 			// mediasoup-client device
+  socket: null, 			//socket io
+  roomId: null, 			//mongodb objectId
+	micProducer: null, 	// producer for mic
 	webcamProducer: null, //producer for webcam
-  mic: null, //stream for mic
-  webcam: null, //stream for webcam
-  producerIds: [], // array of producerIds to be consumed and then removed
-	consumersVideo: [], //{ consumer track, name, socketId }
-	consumersAudio: [], //{ consumer track, name, socketId }
+  mic: null, 					//stream for mic
+  webcam: null, 			//stream for webcam
+	consumers: [],			//{ socketId, name, consumers:{audio:{consumer, transportId}, video:{consumer,transportId}} }
+	consumerQueue: [], 	//{socketId, transportId, name, consumer}
 	audioEnabled: false,
 	videoEnabled: false,
+	inCall: false,
 };
+
+export const getRoom = createAsyncThunk(
+	"videoCall/getRoom",
+	async (data, {getState}) => {
+		const state = getState()
+		const { roomId } = await state.videoCall.socket.emitWithAck("convert-to-string", {roomId: state.videoCall.roomId})
+		return roomId
+	}
+)
 
 export const videoCallSlice = createSlice({
 	name: "videoCall",
@@ -24,18 +36,37 @@ export const videoCallSlice = createSlice({
 			state.socket = io("/")
 			state.device = new mediasoup.Device()
 		},
+		signOutSocket: (state, action) => {
+			state.socket.disconnect()
+			state.roomId = null
+			state.micProducer = null
+			state.webcamProducer = null
+			state.mic = null
+			state.webcam = null
+			state.consumers = []
+			state.consumerQueue = []
+			state.audioEnabled = false
+			state.videoEnabled = false
+			state.inCall = false
+		},
 		logSocket: (state, action) => {
-			state.socket.emit("log-in", {name: action.payload.name})
+			const { name, userId } = action.payload
+			state.socket.emit("log-in", {name, userId})
 		},
 		streamClosed: (state, action) => {
-			const tracks = state.webcam.getTracks();
+			if(state.webcam !== null && state.webcam !== undefined) {
+				const tracks = state.webcam.getTracks();
 
-		  tracks.forEach((track) => {
-		    track.stop();
-		  });
-			state.webcam = null
+			  tracks.forEach((track) => {
+			    track.stop();
+			  });
+				state.webcam = null
+			}
 		},
 		createProducerTransport: (state, action) => {
+			const { roomName, callType } = action.payload
+			state.socket.emit("call-started", {roomId: state.roomId, roomName, callType})
+
 			const data = {
 				forceTcp: false,
 				rtpCapabilities: state.device.rtpCapabilities,
@@ -51,7 +82,27 @@ export const videoCallSlice = createSlice({
 
 		},
 		openedWebcam: (state, action) => {
-			state.webcam = action.payload
+			const stream = new MediaStream()
+			stream.addTrack(action.payload)
+			state.webcam = stream
+		},
+		switchWebcamState: (state, action) => {
+			if(state.videoEnabled) {
+				state.webcamProducer.pause()
+			} else {
+				state.webcamProducer.resume()
+			}
+			state.videoEnabled = !state.videoEnabled
+
+			//state.socket.emit("producer-paused", {roomId: state.roomId})
+		},
+		switchMicState: (state, action) => {
+			if(state.audioEnabled){
+				state.micProducer.pause()
+			} else {
+				state.micProducer.resume()
+			}
+			state.audioEnabled = !state.audioEnabled
 		},
 		micToggle: (state, action) => {
 			state.audioEnabled = !state.audioEnabled
@@ -63,25 +114,148 @@ export const videoCallSlice = createSlice({
 			const { producer } = action.payload
 			if(producer.kind === "video") {
 				state.webcamProducer = producer
+				if(!state.videoEnabled){
+					state.webcamProducer.pause()
+				}
 			} else {
 				state.micProducer = producer
+				if(!state.audioEnabled){
+					state.webcamProducer.pause()
+				}
 			}
 		},
-		getAllProducers: async (state, action) => {
-			const { roomId } = action.payload
-			state.producerIds = await state.socket.emit("get-producers", {roomId})
+		getAllProducers: (state, action) => {
+			state.socket.emit("get-producers", {roomId: state.roomId})
 		},
 		listenToProducer: (state, action) => {
+			console.log("listening to producer")
 			state.socket.emit("create-consumer-transport", action.payload)
 		},
 		remoteTrackFound: (state, action) => {
-			const { consumer, name, socketId } = action.payload
-			if(consumer.kind === "video") {
-				state.consumersVideo.push({track: consumer.track, name, socketId})
+			const { consumer, name, socketId, transportId } = action.payload
+
+			const queuedConsumer = state.consumerQueue.find((consumer) => consumer.socketId == socketId)
+
+			if(queuedConsumer == undefined) {
+				state.consumerQueue.push({socketId, name, transportId, consumer})
 			} else {
-				state.consumersAudio.push({track: consumer.track, name, socketId})
+				let audio
+				let video
+				if(consumer.kind == "video") {
+					video = {consumer, transportId}
+					audio = {consumer: queuedConsumer.consumer, transportId: queuedConsumer.transportId}
+				} else {
+					video = {consumer: queuedConsumer.consumer, transportId: queuedConsumer.transportId}
+					audio = {consumer, transportId}
+				}
+				state.consumers.push({socketId, name, consumers:{audio, video}})
+				state.consumerQueue = state.consumerQueue.filter((consumer) => consumer.socketId != socketId)
 			}
-		}
+		},
+		setRoomId: (state, action) => {
+			state.roomId = action.payload.roomId
+		},
+		connectedConsumer: (state, action) => {
+			const { transportId } = action.payload
+
+			const queuedConsumer = state.consumerQueue.find((consumer) => consumer.transportId == transportId)
+
+			if(queuedConsumer == undefined) {
+				const filteredConsumer = state.consumers.find((consumer) => 
+					consumer.consumers.video.transportId == transportId || 
+					consumer.consumers.audio.transportId == transportId
+					)
+
+				if(filteredConsumer.consumers.video.transportId == transportId) {
+					filteredConsumer.consumers.video.consumer.resume()
+				} else {
+					filteredConsumer.consumers.audio.consumer.resume()
+				}
+			} else {
+				queuedConsumer.consumer.resume()
+			}
+
+		},
+		callStarted: (state, action) => {
+			state.audioEnabled = false
+			state.videoEnabled = false
+			state.inCall = true
+		},
+		callEnded: (state, action) => {
+			state.audioEnabled = false
+			state.videoEnabled = false
+			state.inCall = false
+			if(state.mic !== null) {
+				state.mic.stop()
+				state.mic = null
+			}
+			if(state.webcam !== null) {
+				state.webcam.getVideoTracks()[0].stop()
+				state.webcam = null
+			}
+			if(state.webcamProducer !== null){
+				state.socket.emit("stop-producers")
+				state.webcamProducer.close()
+				state.micProducer.close()
+				state.webcamProducer = null
+				state.micProducer = null
+			}
+			if(state.consumerQueue.length > 0) {
+				state.socket.emit("stop-consumers")
+				state.consumerQueue.forEach((consumer) => {
+					consumer.consumer.close()
+				})
+				state.consumerQueue = []
+			}
+			if(state.consumers.length > 0) {
+				state.socket.emit("stop-consumers")
+				state.consumers.forEach((consumer) => {
+					consumer.consumers.video.consumer.close()
+					consumer.consumers.audio.consumer.close()
+				})
+				state.consumers = []
+			}
+		},
+		consumerEnded: (state, action) => {
+			const { socketId } = action
+			const filteredQueuedConsumers = state.consumerQueue.filter((consumer) => {
+				return consumer.socketId == socketId
+			})
+			if(filteredQueuedConsumers.length > 0) {
+				const transportIds = {
+					transportIds: [
+						filteredQueuedConsumers[0].transportId
+					]
+				}
+				state.socket.emit("stop-select-consumers", {transportIds})
+				filteredQueuedConsumers[0].consumer.close()
+				state.consumerQueue = state.consumerQueue.filter((consumer) => {
+					return consumer.socketId != socketId
+				})
+			} else {
+				const filteredConsumer = state.consumers.filter((consumer) => {
+					return consumer.socketId == socketId
+				})
+
+				if(filteredConsumer.length > 0) {
+					document.querySelector(`#${socketId}`).remove()
+					const transportIds = {
+						transportIds: [
+							filteredConsumer[0].consumers.video.consumer.transportId,
+							filteredConsumer[0].consumers.audio.consumer.transportId,
+						]
+					}
+
+					state.socket.emit("stop-select-consumers", {transportIds})
+					filteredConsumer[0].consumers.video.consumer.close()
+					filteredConsumer[0].consumers.audio.consumer.close()
+
+					state.consumers = state.consumers.filter((consumer) => {
+						return consumer.socketId != socketId
+					})
+				}
+			}
+		},
 	},
 });
 
@@ -90,25 +264,34 @@ export const videoCallSlice = createSlice({
 
 export const {
 	startMedia, 
+	signOutSocket,
 	logSocket,
 	streamClosed,
 	createProducerTransport, 
 	openedWebcam,
+	switchWebcamState,
+	switchMicState,
 	micToggle,
 	videoToggle,
 	createdProducer, 
 	getAllProducers,
 	listenToProducer, 
-	remoteTrackFound } = videoCallSlice.actions;
+	remoteTrackFound,
+	setRoomId,	
+	connectedConsumer,
+	callStarted,
+	callEnded,
+	consumerEnded,
+} = videoCallSlice.actions;
 
 export default videoCallSlice.reducer;
 
 export const socketSelector = (state) => state.videoCall.socket;
 export const deviceSelector = (state) => state.videoCall.device;
-export const webcamSelector = (state) => state.videoCall.webcam
-export const videoToggleSelector = (state) => state.videoCall.videoEnabled
-export const audioToggleSelector = (state) => state.videoCall.audioEnabled
+export const webcamSelector = (state) => state.videoCall.webcam;
+export const videoToggleSelector = (state) => state.videoCall.videoEnabled;
+export const audioToggleSelector = (state) => state.videoCall.audioEnabled;
+export const roomIdSelector = (state) => state.videoCall.roomId;
+export const inCallSelector = (state) => state.videoCall.inCall;
 export const consumersSelector = (state) => state.videoCall.consumers
-
-
 

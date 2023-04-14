@@ -12,19 +12,29 @@ const MessagesModel = require('./server/models/Messages');
 const mongoString = "mongodb+srv://admin:debtappearancetheorist@hangout.sobneka.mongodb.net/hangoutDB?retryWrites=true&w=majority"
 const ObjectID = require('mongodb').ObjectId
 const createWebRtcTransport = require("./server/services/createWebRtcTransport")
+const AccessToken = require('twilio').jwt.AccessToken;
+
+
+const accountSid = "AC14ba204440b62fbe369ef028b48f5216";
+const authToken = "e4fdccfef4df6269e91df3a84a6b466e";
+const twilioApiKey = "SK1b71e8a5035f4f5a1aede3719c055bee";
+const twilioApiSecret = "Z9i1qauPSCHu8VRTeuJoWNKDQaADZnBp";
+const twiMLSid = "AP8b61844fca46a1464f8277c382528470";
+const client = require('twilio')(accountSid, authToken);
 
 const PORT = 3000;
 
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + "/build"))
 
 main()
 
-let onlineUsers = []  // {socketId: socket.id, name: fullName, status: "available" | "busy" | "chatonly"}
+let onlineUsers = []  // {socketId: socket.id, name: fullName, userId: objectId, status: "available" | "busy" | "chatonly"}
 let mediasoupRouter = null;
-const producerTransport = []; //{ socketId, type, transport }
-const consumerTransport = [];
-const producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
+let producerTransport = []; //{ socketId, type, transport }
+let consumerTransport = []; //{socketId, transport}
+let producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
 
 async function main() {
 	await mongoose.connect(
@@ -93,7 +103,15 @@ async function main() {
 
 		if(result.operation === "created") {
 			const senderName = req.body.senderName
-			await UserModel.updateUsersDirect({...result, senderName, sendeeName})
+			const roomInfo = await UserModel.updateUsersDirect({...result, senderName, sendeeName})
+			roomInfo.forEach(({userId, query}) => {
+				const socketId = onlineUsers.find((user) => { 
+					return userId.valueOf() == user.userId.valueOf()
+				})
+				if(socketId !== undefined ) {
+					io.to(socketId.socketId).emit("new-room-added", {query})
+				}
+			})
 		}
 
 		return res.status(200).json(result);
@@ -108,14 +126,22 @@ async function main() {
 		}
 
 		const data = {
-			name: groupName,
+			name: req.body.groupName,
 			users: {users: users, userData: userData}
 		}
 
 		const result = await MessagesModel.createGroupConversation(data)
 
 		if(result.state === "success") {
-			await UserModel.updateUsersGroup(result)
+			const roomInfo = await UserModel.updateUsersGroup(result)
+			roomInfo.forEach(({userId, query}) => {
+				const socketId = onlineUsers.find((user) => { 
+					return userId.valueOf() == user.userId.valueOf()
+				})
+				if(socketId !== undefined ) {
+					io.to(socketId.socketId).emit("new-room-added", {query})
+				}
+			})
 		}
 
 		return res.status(200).json(result);
@@ -125,6 +151,88 @@ async function main() {
 		const result = await MessagesModel.appendMessage(req.body)
 		return res.status(200).json({body:result});
 	});
+
+	app.post("/sort_rooms", async (req, res) => {
+		const result = await MessagesModel.findSortedRooms(req.body)
+		return res.status(200).json({body: result})
+	});
+
+	app.post("/send_sys_message", async (req, res) => {
+		const result = await MessagesModel.sendSystemMsg(req.body)
+		return res.status(200).json({body: result})
+	})
+
+	app.post("/request_phone", async (req, res) => {
+		await UserModel.requestPhone(req.body)
+		return res.status(200).json({})
+	})
+
+	app.post("/create_sms_room", async (req, res) => {
+		const result = await MessagesModel.createSMSConversation(req.body)
+
+		if(result.operation === "created") {
+			const roomInfo = await UserModel.updateUserSMS(result)
+			roomInfo.forEach(({userId, query}) => {
+				const socketId = onlineUsers.find((user) => { 
+					return userId.valueOf() == user.userId.valueOf()
+				})
+				if(socketId !== undefined ) {
+					io.to(socketId.socketId).emit("new-room-added", {query})
+				}
+			})
+		}
+
+		return res.status(200).json(result);
+	})
+
+	app.post("/send_sms", async (req, res) => {
+		const resultServer = await MessagesModel.sendSMSMessage(req.body)
+		const resultNumber = await client.messages.create({
+			body: resultServer.body,
+			from: req.body.senderNumber,
+			to: resultServer.destinationNumber,
+		})
+		return res.status(200).json({body:resultServer})
+	})
+
+	app.post("/recv_sms", async (req, res) => {
+		const { Body, To, From, } = req.body
+		const user = await UserModel.findOne({phoneNumber: To})
+
+		if(user !== null && user !== undefined) {
+			const name = `${user.firstName} ${user.lastName}`
+			const result = await MessagesModel.recvSMS({userId: user._id, body: Body, destinationNumber: From, name})
+			const body = {
+				...result,
+				roomName: From,
+			}
+
+			console.log(result)
+
+			if(result.operation === "created") {
+				const roomInfo = await UserModel.updateUserSMS(result)
+				roomInfo.forEach(({userId, query}) => {
+					const socketId = onlineUsers.find((user) => { 
+						return userId.valueOf() == user.userId.valueOf()
+					})
+					if(socketId !== undefined ) {
+						io.to(socketId.socketId).emit("new-room-added", {query})
+						io.to(socketId.socketId).emit("new-message", { body })
+						io.to("online").emit("notification-message", { body })
+					}
+				})
+			} else {
+				const socketId = onlineUsers.find((userId) => {
+					return userId.userId.valueOf() == user._id.valueOf()
+				})
+				if(socketId !== undefined) {
+					io.to(socketId.socketId).emit("new-message", { body })
+					io.to("online").emit("notification-message", { body })
+				}
+			}
+		}
+
+	})
 
 	app.get("*", (req, res) => {
 	  res.sendFile(__dirname + "/build/index.html");
@@ -139,11 +247,27 @@ async function main() {
 const socketEvents = io => {
 	//insert socket function here
 	io.on("connection", (socket) => {
-
 		socket.on("log-in", (data) => {
-			const { name } = data
-			onlineUsers.push({socketId: socket.id, name, status: "available"})
+			const { name, userId } = data
+			onlineUsers.push({socketId: socket.id, name, userId, status: "available"})
+
+			const token = new AccessToken(
+				accountSid,
+				twilioApiKey,
+				twilioApiSecret,
+				{identity: userId}
+			);
+
+			const grant = new AccessToken.VoiceGrant({
+			    outgoingApplicationSid: twiMLSid,
+			    incomingAllow: true,
+			});
+			token.addGrant(grant)
+			io.to(socket.id).emit("log-in", {token: token.toJwt()})
+
 			console.log("User has logged in")
+			socket.join("online")
+			socket.join("available")
 		})
 
 		socket.on("get-router-rtp-capabilities", () => {
@@ -162,19 +286,32 @@ const socketEvents = io => {
 		})
 
 		socket.on("new-message", (data) => {
-			const { result, roomId } = data
+			const { result, roomId, roomName } = data
 			const { body: items } = result.payload
 
-			const body = { ...items, roomId }
+			const body = { ...items, roomId, roomName }
+			socket.join(roomId)
 			io.to(roomId).emit("new-message", { body })
+			io.to("online").emit("notification-message", { body })
 		})
 
 		socket.on("disconnect", (data) => {
 			const newOnlineUsers = onlineUsers.filter(
 				(user) => user.ID !== socket.id
 			)
-
+			socket.leave("online")
+			socket.leave("available")
 			console.log("Socket disconnected")
+		})
+
+		socket.on("convert-to-string", ({roomId}, callback) => {
+			const convertedRoomId = new ObjectID(roomId)
+			callback({roomId: convertedRoomId.valueOf()})
+		})
+
+		socket.on("call-started", ({ roomId, roomName, callType }) => {
+			socket.leave("available")
+			io.to("available").emit("call-started", { roomId, roomName, callType })
 		})
 
 		socket.on("create-producer-transport", async (event) => {
@@ -186,7 +323,7 @@ const socketEvents = io => {
 
 		socket.on("connect-producer-transport", async (data, callback) => {
 			const { dtlsParameters, transportId } = data
-			const transport = findProducerTransport({transportId})
+			const transport = findTransport({transportId}, producerTransport)
 			await transport.connect({dtlsParameters})
 			callback()
 		})
@@ -198,12 +335,12 @@ const socketEvents = io => {
 				rtpParameters, 
 				roomId, 
 				transportId } = data
-			const transport = findProducerTransport({transportId})
+
+			const transport = findTransport({transportId}, producerTransport)
 			const producer = await transport.produce({kind, rtpParameters})
 			socket.leave(`${roomId} call`)
 
-			const ids = [{producerId: producer.id, socketId: socket.id, name}]
-
+			const ids = {ids: [{producerId: producer.id, socketId: socket.id, name}]}
 			io.to(`${roomId} call`).emit("new-producer", {producerIds: ids})
 			socket.join(`${roomId} call`)
 
@@ -225,26 +362,29 @@ const socketEvents = io => {
 		})
 
 		socket.on("create-consumer-transport", async (data) => {
-			const { transport, params } =  await createWebRtcTransport({data, router: mediasoupRouter})
-			consumerTransport = transport
+			const { socketId, name, producerId } = data
+			const { transport, params } =  await createWebRtcTransport({data: null, router: mediasoupRouter})
+			consumerTransport.push({transport, socketId: socket.id})
 			
-			io.to(socket.id).emit("consumer-transport-created", params)
+			io.to(socket.id).emit("consumer-transport-created", {name, socketId, producerId, params })
 		})
 
-		socket.on("connect-consumer-transport", async({dtlsParameters}, callback) => {
-			await consumerTransport.connect({dtlsParameters})
+		socket.on("connect-consumer-transport", async({dtlsParameters, transportId}, callback) => {
+			const transport = findTransport({transportId}, consumerTransport)
+			await transport.connect({dtlsParameters})
 			callback()
 		})
 
-		socket.on("consume", async({rtpCapabilities}, callback) => {
-			const consumer = await consumerTransport.consume({
-				producerId: producer.id,
+		socket.on("consume", async({rtpCapabilities, producerId, transportId}, callback) => {
+			const transport = findTransport({transportId}, consumerTransport)
+
+			const consumer = await transport.consume({
+				producerId,
 				rtpCapabilities,
 				paused: false,
 			})
 
 			const params = {
-				producerId: producer.id,
 				id: consumer.id,
 				kind: consumer.kind,
 				rtpParameters: consumer.rtpParameters,
@@ -253,12 +393,69 @@ const socketEvents = io => {
 			}
 			callback(params)
 		})
+
+		socket.on("producer-paused", ({roomId}) => {
+
+			socket.leave(`${roomId} call`)
+			io.to(`${roomId} call`).emit("producer-paused", {socketId: socket.id})
+			socket.join(`${roomId} call`)
+		})
+
+		socket.on("stop-producers", () => {
+			socket.join("available")
+			const filteredTransport = producerTransport.filter((transport) => {
+				if(transport.socketId == socket.id){
+					transport.transport.close()
+				}
+				return transport.socketId != socket.id
+			})
+
+			producerTransport = filteredTransport
+			producerIds.forEach((room) => {
+				const filteredRoom = room.ids.filter((id) => {
+					return id.socketId != socket.id
+				})
+				if(room.ids.length != filteredRoom.length){
+					room.ids = filteredRoom
+					io.to(room.roomId).emit("user-left", {socketId: socket.id})
+				}
+			})
+			producerIds = producerIds.filter((room) => {
+				return room.ids.length > 0
+			})
+		})
+
+		socket.on("stop-consumers", () => {
+			consumerTransport.forEach((transport) => {
+				if(transport.socketId == socket.id){
+					transport.transport.close()
+				}
+			})
+			const filteredTransport = consumerTransport.filter((transport) => {
+				return transport.socketId != socket.id
+			})
+			consumerTransport = filteredTransport
+		})
+
+		socket.on("stop-select-consumers", ({transportIds}) => {
+			transportIds.forEach((transportId) => {
+				const filteredTransport = consumerTransport.filter((transport) => {
+					return transport.transportId == transportId
+				})
+
+				filteredTransport[0].transport.close()
+				consumerTransport = consumerTransport.filter((transport) => {
+					return transport.transportId != transportId
+				})
+			})
+		})
+
 	})
 }
 
-const findProducerTransport = (data) => {
+const findTransport = (data, transports) => {
 	const { transportId } = data
-	const filteredTransport = producerTransport.filter((transport) => {
+	const filteredTransport = transports.filter((transport) => {
 		return transport.transport.id == transportId  ?
 			transport : null
 	})
@@ -324,7 +521,6 @@ const createWorker = async () => {
 		console.error('mediasoup worker died, exiting in 2 seconds... [pid:%d]', worker.pid);
 		setTimeout(() => process.exit(1), 2000);
 	});
-
 
 	const mediaCodecs = config.mediasoup.router.mediaCodecs;
 
