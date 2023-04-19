@@ -12,6 +12,7 @@ const initialState = {
   conversationList: [], //{type, chatId, name}
   phoneNumber: null,
   device: null,
+  call: null,
   loggedIn: false,
 };
 
@@ -67,6 +68,56 @@ export const getRoomName = createAsyncThunk(
     })
 
     return roomName.name
+  }
+)
+
+export const findRoomIdByPhone = createAsyncThunk(
+  "userCred/findRoomIdByPhone",
+  async ({phoneNumber}, {getState}) => {
+    const state = getState()
+    const conversation = state.userCred.conversationList.find((conversation) => conversation.name == phoneNumber)
+    console.log(conversation)
+    return conversation
+  }
+);
+
+export const connectDevice = createAsyncThunk(
+  "userCred/connectDevice",
+  async ({To}, {getState, dispatch}) => {
+    const state = getState()
+    if(state.userCred.device){
+      const call = await state.userCred.device.connect({
+        params: {
+          To,
+          From: state.userCred.phoneNumber,
+          Direction: "outbound",
+        }
+      })
+
+      call.on("accept", () => {
+        console.log("call is ready")
+      })
+
+      call.on("disconnect", () => {
+        console.log("call disconnected")
+        //dispatch(hangUp())
+      })
+
+      call.on("cancel", () => {
+        console.log("call canceled")
+      })
+
+      call.on("reject", () => {
+        console.log("call rejected")
+        //dispatch(hangUp())
+      })
+
+      call.on('error', (error) => {
+        console.log('An error has occurred: ', error);
+      })
+
+      return { call }
+    }
   }
 )
 
@@ -161,13 +212,35 @@ export const userCredSlice = createSlice({
         console.log("Error " + error.message)
       })
 
-      device.on("incoming", (call) => {
-        const { From } = call.parameters
-        console.log(From)
+      device.on("destroyed", () => {
+        console.log("User destroyed")
       })
 
       device.register()
       state.device = device
+    },
+
+    setPhoneMic: (state, action) => {
+      const { audioEnabled } = action.payload
+      state.device.audio.outgoing(audioEnabled)
+      state.device.audio.incoming(audioEnabled)
+      state.device.audio.disconnect(audioEnabled)
+    },
+
+    incomingCall: (state, action) => {
+      state.call = action.payload.call
+    },
+
+    hangUp: (state, action) => {
+      if(state.call !== null){
+        state.call.disconnect()
+        state.call = null
+      }
+    },
+
+    callRejected: (state, action) => {
+      state.action.call.reject()
+      state.action.call = null
     },
 
     newRoomAdded: (state, action) => {
@@ -204,6 +277,8 @@ export const userCredSlice = createSlice({
       state.lastName = null;
       state.conversationList = [];
       state.loggedIn = false;
+      state.device.destroy();
+      state.device = null;
     },
 	},
   extraReducers: (builder) => {
@@ -212,16 +287,36 @@ export const userCredSlice = createSlice({
         const { sortedIds } = action.payload
         state.conversationList = sortedIds
       })
+
+      .addCase(connectDevice.fulfilled, (state, action) => {
+        const { call } = action.payload
+        state.call = call
+      })
+
     },
 });
 
-export const {loggedIn, receivedToken, newRoomAdded, requestedPhone, reorderRooms, signOutUser} = userCredSlice.actions;
+export const {
+  loggedIn, 
+  receivedToken, 
+  setPhoneMic,
+  incomingCall,
+  hangUp, 
+  callRejected,
+  newRoomAdded, 
+  requestedPhone, 
+  reorderRooms, 
+  signOutUser 
+} = userCredSlice.actions;
 
 export default userCredSlice.reducer;
 
 export const idSelector =  (state) => state.userCred.id
 export const emailSelector = (state) => state.userCred.email;
 export const conversationSelector = (state) => state.userCred.conversationList;
-export const fullNameSelector = (state) => {return `${state.userCred.firstName} ${state.userCred.lastName}`}
+export const fullNameSelector = (state) => {return `${state.userCred.firstName} ${state.userCred.lastName}`};
 export const loggedInSelector = (state) => state.userCred.loggedIn;
 export const phoneSelector = (state) => state.userCred.phoneNumber;
+export const phoneStateSelector = (state) => {return state.userCred.device !== null ? state.userCred.device.state : null}
+export const callSelector = (state) => state.userCred.call;
+export const phoneDeviceSelector = (state) => state.userCred.device;

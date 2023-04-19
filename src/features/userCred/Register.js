@@ -47,7 +47,11 @@ export function Register() {
       dispatch(setsId(created.payload.body))
       dispatch(startMedia())
       const userName = `${created.payload.body.firstName} ${created.payload.body.lastName}`
-      dispatch(logSocket({name: userName, userId: created.payload.body._id}))
+      dispatch(logSocket({
+        name: userName, 
+        userId: created.payload.body._id, 
+        phoneNumber: created.payload.body.phoneNumber
+      }))
     }
   }
 

@@ -29,7 +29,7 @@ export function MessageBoardDisplay() {
 		                    <div className="pr-4"></div>
 		                  </div>
 		                </div>
-		                <div className="message-options dark">
+		                {/*<div className="message-options dark">
 		                  <div className="message-time">
 		                    <div className="d-flex flex-row">
 		                      <div className="mr-2">You</div>
@@ -37,17 +37,17 @@ export function MessageBoardDisplay() {
 		                    </div>
 		                  </div>
 		                  <div className="message-arrow">You</div>
-		                </div>
+		                </div>*/}
 		              </div>
 		            </div>
 	            ) : (
 	            	<div className="left-chat-message fs-13 mb-2">
 		              <p className="mb-0 mr-3 pr-4">{message.body}</p>
-		              <div className="message-options">
-		                {/*<div className="message-time">{message.senderName}</div>*/}
+		              {/*<div className="message-options">
+		                <div className="message-time">{message.senderName}</div>
 		              	<div className="message-time">06:52</div>
 		                <div className="message-arrow">{message.senderName}</div>
-		              </div>
+		              </div>*/}
 		            </div>
 	            )
             })}

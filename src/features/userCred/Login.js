@@ -32,7 +32,11 @@ export function Login() {
       dispatch(setsId(verified.payload.body))
       dispatch(startMedia())
       const userName = `${verified.payload.body.firstName} ${verified.payload.body.lastName}`
-      dispatch(logSocket({name: userName, userId: verified.payload.body._id}))
+      dispatch(logSocket({
+        name: userName, 
+        userId: verified.payload.body._id, 
+        phoneNumber: verified.payload.body.phoneNumber
+      }))
     }
   }
 

@@ -14,7 +14,7 @@ import { fullNameSelector } from "../userCred/userCredSlice"
 import { sendSystemMsg } from "../messenger/messengerSlice"
 import { useSelector, useDispatch } from "react-redux";
 
-export function InCallWindow() {
+export function InCallWindow({callType}) {
 	const dispatch = useDispatch()
 	const consumerArray = useSelector(consumersSelector);
 	const socket = useSelector(socketSelector);

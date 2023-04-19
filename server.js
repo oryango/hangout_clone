@@ -13,6 +13,9 @@ const mongoString = "mongodb+srv://admin:debtappearancetheorist@hangout.sobneka.
 const ObjectID = require('mongodb').ObjectId
 const createWebRtcTransport = require("./server/services/createWebRtcTransport")
 const AccessToken = require('twilio').jwt.AccessToken;
+const VoiceResponse = require("twilio").twiml.VoiceResponse;
+const validator = require("validator");
+
 
 
 const accountSid = "AC14ba204440b62fbe369ef028b48f5216";
@@ -30,7 +33,7 @@ app.use(express.static(__dirname + "/build"))
 
 main()
 
-let onlineUsers = []  // {socketId: socket.id, name: fullName, userId: objectId, status: "available" | "busy" | "chatonly"}
+let onlineUsers = []  // {socketId: socket.id, name: fullName, userId: objectId, status: "available" | "busy" | "chatonly", phoneNumber: number}
 let mediasoupRouter = null;
 let producerTransport = []; //{ socketId, type, transport }
 let consumerTransport = []; //{socketId, transport}
@@ -234,10 +237,75 @@ async function main() {
 
 	})
 
+	app.post("/voice", (req, res) => {
+		const { To, From, Caller, Direction } = req.body
+		console.log(req.body)
+		let twiml = new VoiceResponse()
+		//find if 
+		let receiver = null
+		let caller = null
+
+		onlineUsers.forEach((user) => {
+			console.log(user.phoneNumber)
+			if(To.includes(user.userId) || To == user.phoneNumber){
+				receiver = user
+			} else if(Caller.includes(user.userId) || From.includes(user.phoneNumber)) {
+				caller = user
+			}
+		})
+		//if person is online set to be unavailable for call 
+
+		console.log(receiver)
+		console.log(caller)
+
+		// if (receiver !== null) {
+		//     let dial = twiml.dial();
+
+		//     // This will connect the caller with your Twilio.Device/client 
+		//     dial.client(receiver.userId);
+
+		// } else if (To) {
+		//     // This is an outgoing call
+
+		//     // set the callerId
+		//     let dial = twiml.dial({ callerId:caller.phoneNumber });
+
+		//     // Check if the 'To' parameter is a Phone Number or Client Name
+		//     // in order to use the appropriate TwiML noun 
+		//     const attr = validator.isMobilePhone(To, "any", {strictMode: true})
+		//       	? "number"
+		//       	: "client";
+		//     dial[attr]({}, To);
+		// } else {
+		//     twiml.say("Thanks for calling!");
+		// }
+		//let dial = twiml.dial({ callerId:caller.phoneNumber });
+		//dial.number("+639228875087");
+
+		if(Direction == "outbound" && To){
+			let dial = twiml.dial({callerId:caller.phoneNumber});
+			const attr = validator.isMobilePhone(To, "any", {strictMode: true})
+			  	? "number"
+		      	: "client";
+		    dial[attr]({}, To);
+		} else if(Direction == "inbound" && To){
+			let dial = twiml.dial()
+			dial.client(receiver.userId)
+		} else {
+			twiml.say("Thanks for calling!");
+		}
+
+
+		console.log(twiml.toString());
+		res.set("Content-Type", "text/xml");
+
+		res.send(twiml.toString());
+
+	});
+
 	app.get("*", (req, res) => {
 	  res.sendFile(__dirname + "/build/index.html");
 	});
-
 
 	http.listen(PORT, () => {
 	  console.log(`listening on ${PORT}`);
@@ -248,8 +316,8 @@ const socketEvents = io => {
 	//insert socket function here
 	io.on("connection", (socket) => {
 		socket.on("log-in", (data) => {
-			const { name, userId } = data
-			onlineUsers.push({socketId: socket.id, name, userId, status: "available"})
+			const { name, userId, phoneNumber } = data
+			onlineUsers.push({socketId: socket.id, name, userId, status: "available", phoneNumber})
 
 			const token = new AccessToken(
 				accountSid,

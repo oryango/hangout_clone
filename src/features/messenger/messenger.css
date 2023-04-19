@@ -717,6 +717,14 @@ img.shadow {
   color: #3d51a7;
 }
 
+.answer-icon {
+  color: #32A868;
+}
+
+.reject-icon {
+  color: #bd3939;
+}
+
 #new-window-container {
   margin: 2vw auto;
 }
@@ -826,6 +834,11 @@ img.shadow {
   margin: 0;
   padding: 100%;
   position: absolute;
+}
+
+.phone-name {
+  text-align: center;
+  margin: 15% 0
 }
 
 /*perfect scrollbar*/

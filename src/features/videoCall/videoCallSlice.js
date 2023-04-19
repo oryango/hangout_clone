@@ -8,6 +8,7 @@ const initialState = {
   device: null, 			// mediasoup-client device
   socket: null, 			//socket io
   roomId: null, 			//mongodb objectId
+  roomName: null, 		//name of current room
 	micProducer: null, 	// producer for mic
 	webcamProducer: null, //producer for webcam
   mic: null, 					//stream for mic
@@ -17,6 +18,7 @@ const initialState = {
 	audioEnabled: false,
 	videoEnabled: false,
 	inCall: false,
+	direction: false,
 };
 
 export const getRoom = createAsyncThunk(
@@ -50,8 +52,8 @@ export const videoCallSlice = createSlice({
 			state.inCall = false
 		},
 		logSocket: (state, action) => {
-			const { name, userId } = action.payload
-			state.socket.emit("log-in", {name, userId})
+			const { name, userId, phoneNumber } = action.payload
+			state.socket.emit("log-in", {name, userId, phoneNumber})
 		},
 		streamClosed: (state, action) => {
 			if(state.webcam !== null && state.webcam !== undefined) {
@@ -64,8 +66,12 @@ export const videoCallSlice = createSlice({
 			}
 		},
 		createProducerTransport: (state, action) => {
-			const { roomName, callType } = action.payload
-			state.socket.emit("call-started", {roomId: state.roomId, roomName, callType})
+			const { callType } = action.payload
+			state.socket.emit("call-started", {
+				roomId: state.roomId, 
+				roomName: state.roomName, 
+				callType
+			})
 
 			const data = {
 				forceTcp: false,
@@ -152,8 +158,10 @@ export const videoCallSlice = createSlice({
 				state.consumerQueue = state.consumerQueue.filter((consumer) => consumer.socketId != socketId)
 			}
 		},
-		setRoomId: (state, action) => {
+		setRoomCall: (state, action) => {
 			state.roomId = action.payload.roomId
+			state.roomName = action.payload.roomName
+			state.direction = action.payload.direction
 		},
 		connectedConsumer: (state, action) => {
 			const { transportId } = action.payload
@@ -184,6 +192,7 @@ export const videoCallSlice = createSlice({
 		callEnded: (state, action) => {
 			state.audioEnabled = false
 			state.videoEnabled = false
+			state.direction = false
 			state.inCall = false
 			if(state.mic !== null) {
 				state.mic.stop()
@@ -277,7 +286,7 @@ export const {
 	getAllProducers,
 	listenToProducer, 
 	remoteTrackFound,
-	setRoomId,	
+	setRoomCall,	
 	connectedConsumer,
 	callStarted,
 	callEnded,
@@ -292,6 +301,7 @@ export const webcamSelector = (state) => state.videoCall.webcam;
 export const videoToggleSelector = (state) => state.videoCall.videoEnabled;
 export const audioToggleSelector = (state) => state.videoCall.audioEnabled;
 export const roomIdSelector = (state) => state.videoCall.roomId;
+export const roomNameSelector = (state) => state.videoCall.roomName;
 export const inCallSelector = (state) => state.videoCall.inCall;
 export const consumersSelector = (state) => state.videoCall.consumers
-
+export const directionSelector = (state) => state.videoCall.direction

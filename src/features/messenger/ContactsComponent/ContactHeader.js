@@ -39,9 +39,9 @@ export function ContactHeader({conversation}) {
           <div>
             <p className="margin-auto fw-400 text-dark-75">{ name }</p>
             <div className="d-flex flex-row mt-1">
-              <span>
+              {/*<span>
                 <div className="svg15 double-check"></div>
-              </span>
+              </span>*/}
             </div>
           </div>
         </div>
