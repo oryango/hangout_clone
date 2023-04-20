@@ -9,12 +9,18 @@ import {
   addDirectRoom, 
   requestPhoneFromServer,
   addSMSRoom,
+  roomSelector,
 } from "../messengerSlice";
+import {
+	socketSelector,
+} from "../../videoCall/videoCallSlice"
 import { useSelector, useDispatch } from "react-redux"
 
 export function DirectMessagePanel({senderEmail, senderName, senderId}) {
 	const dispatch = useDispatch();
 	const personalNumber = useSelector(phoneSelector)
+	const socket = useSelector(socketSelector)
+	const currentRoom = useSelector(roomSelector)
   const [email, setEmail] = useState("")
   const [errorEmail, setErrorEmail] = useState([])
   const [inputNumber, setNumber] = useState("")
@@ -25,6 +31,8 @@ export function DirectMessagePanel({senderEmail, senderName, senderId}) {
 		const response = await dispatch(addDirectRoom({ email, senderEmail, senderName, senderId}))
 	  if(response.payload.state === "error_found") {
 	  	setErrorEmail(response.payload.errors)
+	  } else {
+	  	socket.emit("join-new-room", {previousRoom: currentRoom, roomId: response.payload.newRoomId})
 	  }
 	}
 

@@ -8,7 +8,6 @@ const initialState = {
   id: null,
   firstName: null,
   lastName: null,
-  unsortedConversationList: [], //{type, chatId, name}
   conversationList: [], //{type, chatId, name}
   phoneNumber: null,
   device: null,
@@ -246,8 +245,10 @@ export const userCredSlice = createSlice({
     newRoomAdded: (state, action) => {
       const { query } = action.payload
       console.log(query)
-      console.log(state.conversationList)
-      state.conversationList.push(query)
+      const conversationList = state.conversationList 
+      conversationList.unshift(query)
+      state.conversationList = conversationList
+      console.log(conversationList)
     },
 
     requestedPhone: (state, action) => {

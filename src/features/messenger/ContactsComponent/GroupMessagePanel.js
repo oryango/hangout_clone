@@ -1,35 +1,37 @@
 import React, { useState } from "react";
-import { addGroupRoom } from "../messengerSlice";
+import { addGroupRoom, roomSelector } from "../messengerSlice";
+import { socketSelector } from "../../videoCall/videoCallSlice"
 import { useSelector, useDispatch } from "react-redux";
 import validator from "validator";
 
 export function GroupMessagePanel({senderEmail, senderId, senderName}) {
 	const dispatch = useDispatch();
-
+  const socket = useSelector(socketSelector)
+  const currentRoom = useSelector(roomSelector)
 	const [groupName, setGroupName] = useState("") //state for the group name for creating a group
-  	const [email, setEmail] = useState("")
-  	const [emailList, setEmailList] = useState([])
-  	const [errors, setErrors] = useState([])
+	const [email, setEmail] = useState("")
+	const [emailList, setEmailList] = useState([])
+	const [errors, setErrors] = useState([])
 
-  	const verifyEmail = email => {
-  		setErrors([])
-	    let errors = []
-	    const options = { ignore_whitespace: true }
+	const verifyEmail = email => {
+		setErrors([])
+    let errors = []
+    const options = { ignore_whitespace: true }
 
-	    if(validator.isEmpty(email, options)) {
-	      errors.push("Email field is required") 
-	    } else {
-	      if(!validator.isEmail(email))
-	        errors.push("Please input a valid email address")
-	    }
+    if(validator.isEmpty(email, options)) {
+      errors.push("Email field is required") 
+    } else {
+      if(!validator.isEmail(email))
+        errors.push("Please input a valid email address")
+    }
 
-	    if(errors.length == 0) {
-	      emailList.push(email)
-	      setEmail("")
-	      console.log(emailList)
-	    } else {
-	      setErrors(errors)
-	    }
+    if(errors.length == 0) {
+      emailList.push(email)
+      setEmail("")
+      console.log(emailList)
+    } else {
+      setErrors(errors)
+    }
 	}
 
 	const processCreateGroup = async () => {
@@ -38,7 +40,9 @@ export function GroupMessagePanel({senderEmail, senderId, senderName}) {
 		
 		if(response.payload.state === "error_found") {
 	  		setErrors(response.payload.errors)
-	  	}
+	  } else {
+      socket.emit("join-new-room", {previousRoom: currentRoom, roomId: response.payload.newRoomId})
+    }
 	}
 
 	const removeEmail = toRemoveEmail => {

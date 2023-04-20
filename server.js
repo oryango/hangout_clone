@@ -1,11 +1,6 @@
-const express = require("express");
-const app = express();
-const http = require("http").Server(app);
-const io = require("socket.io")(http);
 const bodyParser = require('body-parser');
 const mediasoup = require('mediasoup');
 const config = require('./server/config');
-
 const mongoose = require('mongoose');
 const UserModel = require('./server/models/User');
 const MessagesModel = require('./server/models/Messages');
@@ -16,8 +11,6 @@ const AccessToken = require('twilio').jwt.AccessToken;
 const VoiceResponse = require("twilio").twiml.VoiceResponse;
 const validator = require("validator");
 
-
-
 const accountSid = "AC14ba204440b62fbe369ef028b48f5216";
 const authToken = "e4fdccfef4df6269e91df3a84a6b466e";
 const twilioApiKey = "SK1b71e8a5035f4f5a1aede3719c055bee";
@@ -25,13 +18,10 @@ const twilioApiSecret = "Z9i1qauPSCHu8VRTeuJoWNKDQaADZnBp";
 const twiMLSid = "AP8b61844fca46a1464f8277c382528470";
 const client = require('twilio')(accountSid, authToken);
 
-const PORT = 3000;
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(express.static(__dirname + "/build"))
-
-main()
+const express = require("express");
+const app = express();
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
 
 let onlineUsers = []  // {socketId: socket.id, name: fullName, userId: objectId, status: "available" | "busy" | "chatonly", phoneNumber: number}
 let mediasoupRouter = null;
@@ -39,7 +29,16 @@ let producerTransport = []; //{ socketId, type, transport }
 let consumerTransport = []; //{socketId, transport}
 let producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
 
+const PORT = 3000;
+
+main()
+
+
 async function main() {
+	app.use(bodyParser.json());
+	app.use(bodyParser.urlencoded({ extended: true }));
+	app.use(express.static(__dirname + "/build"))
+
 	await mongoose.connect(
 		mongoString, {
 		useNewUrlParser: true,
@@ -102,7 +101,6 @@ async function main() {
 		const sendeeName = `${verify.firstName} ${verify.lastName}`;
 
 		const result = await MessagesModel.createDirectConversation({...req.body, sendeeName, sendeeId});
-		console.log(result)
 
 		if(result.operation === "created") {
 			const senderName = req.body.senderName
@@ -255,33 +253,6 @@ async function main() {
 		})
 		//if person is online set to be unavailable for call 
 
-		console.log(receiver)
-		console.log(caller)
-
-		// if (receiver !== null) {
-		//     let dial = twiml.dial();
-
-		//     // This will connect the caller with your Twilio.Device/client 
-		//     dial.client(receiver.userId);
-
-		// } else if (To) {
-		//     // This is an outgoing call
-
-		//     // set the callerId
-		//     let dial = twiml.dial({ callerId:caller.phoneNumber });
-
-		//     // Check if the 'To' parameter is a Phone Number or Client Name
-		//     // in order to use the appropriate TwiML noun 
-		//     const attr = validator.isMobilePhone(To, "any", {strictMode: true})
-		//       	? "number"
-		//       	: "client";
-		//     dial[attr]({}, To);
-		// } else {
-		//     twiml.say("Thanks for calling!");
-		// }
-		//let dial = twiml.dial({ callerId:caller.phoneNumber });
-		//dial.number("+639228875087");
-
 		if(Direction == "outbound" && To){
 			let dial = twiml.dial({callerId:caller.phoneNumber});
 			const attr = validator.isMobilePhone(To, "any", {strictMode: true})
@@ -295,10 +266,7 @@ async function main() {
 			twiml.say("Thanks for calling!");
 		}
 
-
-		console.log(twiml.toString());
 		res.set("Content-Type", "text/xml");
-
 		res.send(twiml.toString());
 
 	});
@@ -365,8 +333,9 @@ const socketEvents = io => {
 
 		socket.on("disconnect", (data) => {
 			const newOnlineUsers = onlineUsers.filter(
-				(user) => user.ID !== socket.id
+				(user) => user.socketId !== socket.id
 			)
+			onlineUsers = newOnlineUsers
 			socket.leave("online")
 			socket.leave("available")
 			console.log("Socket disconnected")
@@ -375,6 +344,15 @@ const socketEvents = io => {
 		socket.on("convert-to-string", ({roomId}, callback) => {
 			const convertedRoomId = new ObjectID(roomId)
 			callback({roomId: convertedRoomId.valueOf()})
+		})
+
+		socket.on("join-new-room", ({previousRoom, roomId}) => {
+			console.log(previousRoom)
+			console.log(roomId)
+			if(previousRoom !== null) {
+				socket.leave(previousRoom)
+			}
+			socket.join(roomId)
 		})
 
 		socket.on("call-started", ({ roomId, roomName, callType }) => {
@@ -508,12 +486,11 @@ const socketEvents = io => {
 		socket.on("stop-select-consumers", ({transportIds}) => {
 			transportIds.forEach((transportId) => {
 				const filteredTransport = consumerTransport.filter((transport) => {
-					return transport.transportId == transportId
+					return transport.transport.id == transportId
 				})
-
 				filteredTransport[0].transport.close()
 				consumerTransport = consumerTransport.filter((transport) => {
-					return transport.transportId != transportId
+					return transport.transport.id != transportId
 				})
 			})
 		})

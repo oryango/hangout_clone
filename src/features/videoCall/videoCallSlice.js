@@ -13,7 +13,7 @@ const initialState = {
 	webcamProducer: null, //producer for webcam
   mic: null, 					//stream for mic
   webcam: null, 			//stream for webcam
-	consumers: [],			//{ socketId, name, consumers:{audio:{consumer, transportId}, video:{consumer,transportId}} }
+	consumers: [],			//{ socketId, name, consumers:{audio:{consumer, transportId: transport}, video:{consumer,transportId: transport}} }
 	consumerQueue: [], 	//{socketId, transportId, name, consumer}
 	audioEnabled: false,
 	videoEnabled: false,
@@ -120,14 +120,10 @@ export const videoCallSlice = createSlice({
 			const { producer } = action.payload
 			if(producer.kind === "video") {
 				state.webcamProducer = producer
-				if(!state.videoEnabled){
-					state.webcamProducer.pause()
-				}
+				state.webcamProducer.pause()
 			} else {
 				state.micProducer = producer
-				if(!state.audioEnabled){
-					state.webcamProducer.pause()
-				}
+				state.micProducer.pause()
 			}
 		},
 		getAllProducers: (state, action) => {
@@ -226,7 +222,8 @@ export const videoCallSlice = createSlice({
 			}
 		},
 		consumerEnded: (state, action) => {
-			const { socketId } = action
+			const { socketId } = action.payload
+			console.log(socketId)
 			const filteredQueuedConsumers = state.consumerQueue.filter((consumer) => {
 				return consumer.socketId == socketId
 			})
@@ -247,15 +244,16 @@ export const videoCallSlice = createSlice({
 				})
 
 				if(filteredConsumer.length > 0) {
-					document.querySelector(`#${socketId}`).remove()
+					console.log(filteredConsumer)
+					//document.querySelector(`#${socketId}`).remove()
 					const transportIds = {
 						transportIds: [
-							filteredConsumer[0].consumers.video.consumer.transportId,
-							filteredConsumer[0].consumers.audio.consumer.transportId,
+							filteredConsumer[0].consumers.video.transportId,
+							filteredConsumer[0].consumers.audio.transportId,
 						]
 					}
 
-					state.socket.emit("stop-select-consumers", {transportIds})
+					state.socket.emit("stop-select-consumers", transportIds)
 					filteredConsumer[0].consumers.video.consumer.close()
 					filteredConsumer[0].consumers.audio.consumer.close()
 
