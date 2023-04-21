@@ -36,9 +36,11 @@ let producerTransport = []; //{ socketId, type, transport }
 let consumerTransport = []; //{socketId, transport}
 let producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
 
-const PORT = 80;
+const PORT = 443;
 
 
+const http = require("http").createServer(app)
+http.listen(80)
 
 
 main()
