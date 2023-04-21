@@ -36,6 +36,7 @@ let mediasoupRouter = null;
 let producerTransport = []; //{ socketId, type, transport }
 let consumerTransport = []; //{socketId, transport}
 let producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
+let iceServers
 
 const PORT = 443;
 
@@ -43,8 +44,6 @@ main()
 
 
 async function main() {
-
-
 	const server = http.createServer((req, res) => {
 	  res.writeHead(301,{Location: `https://${req.headers.host}${req.url}`});
 	  res.end();
@@ -55,6 +54,9 @@ async function main() {
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: true }));
 	app.use(express.static(__dirname + "/build"))
+
+	const iceServerResponse = await fetch(processConfig.iceServers);
+	iceServers = await iceServerResponse.json();
 
 	await mongoose.connect(
 		mongoString, {
@@ -377,7 +379,7 @@ const socketEvents = io => {
 
 		socket.on("create-producer-transport", async (event) => {
 			const { data, type } = event
-			const { transport, params } =  await createWebRtcTransport({data, router: mediasoupRouter})
+			const { transport, params } =  await createWebRtcTransport({data, router: mediasoupRouter, iceServers: iceServers})
 			producerTransport.push({transport, socketId: socket.id, type})
 			io.to(socket.id).emit("producer-transport-created", {params, type})
 		})
@@ -424,7 +426,7 @@ const socketEvents = io => {
 
 		socket.on("create-consumer-transport", async (data) => {
 			const { socketId, name, producerId } = data
-			const { transport, params } =  await createWebRtcTransport({data: null, router: mediasoupRouter})
+			const { transport, params } =  await createWebRtcTransport({data: null, router: mediasoupRouter, iceServers: iceServers})
 			consumerTransport.push({transport, socketId: socket.id})
 			
 			io.to(socket.id).emit("consumer-transport-created", {name, socketId, producerId, params })

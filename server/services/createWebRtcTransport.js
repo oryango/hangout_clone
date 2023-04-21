@@ -2,7 +2,7 @@ const config = require("../config")
 const mediasoup = require('mediasoup');
 
 
-module.exports = async ({data, router}) => {
+module.exports = async ({data, router, iceServers}) => {
 	const {
 		maxIncomingBitrate,
 		initialAvailableOutgoingBitrate,
@@ -25,9 +25,7 @@ module.exports = async ({data, router}) => {
 			iceParameters: transport.iceParameters,
 			iceCandidates: transport.iceCandidates,
 			dtlsParameters: transport.dtlsParameters,
-			iceServers : [ {
-    			'urls' : 'stun:stun1.l.google.com:19302'
-  			}]
+			iceServers : iceServers,
 		},
 	}
 }

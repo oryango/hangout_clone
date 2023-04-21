@@ -13,5 +13,6 @@ cfg.twilioApiSecret = process.env.TWILIO_API_SECRET;
 
 cfg.mongoString = process.env.MONGO_STRING
 
+cfg.iceServers = process.env.TURN_SERVER
 
 module.exports = cfg;
