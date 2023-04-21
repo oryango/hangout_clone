@@ -29,7 +29,7 @@ let producerTransport = []; //{ socketId, type, transport }
 let consumerTransport = []; //{socketId, transport}
 let producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
 
-const PORT = 3000;
+const PORT = 80;
 
 main()
 
