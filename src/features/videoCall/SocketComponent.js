@@ -17,6 +17,8 @@ import {
   videoToggleSelector,
   audioToggleSelector,
   consumerEnded,
+  callEnded,
+  streamClosed,
 } from './videoCallSlice';
 import { 
   fullNameSelector, 

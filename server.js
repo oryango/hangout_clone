@@ -10,7 +10,7 @@ const createWebRtcTransport = require("./server/services/createWebRtcTransport")
 const AccessToken = require('twilio').jwt.AccessToken;
 const VoiceResponse = require("twilio").twiml.VoiceResponse;
 const validator = require("validator");
-const mongoString = processConfig.mongoString
+const mongoString = processConfig.mongoStrin
 
 
 const accountSid = processConfig.accountSid;
