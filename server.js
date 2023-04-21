@@ -27,6 +27,7 @@ const key = fs.readFileSync('./ssl/private.key');
 
 const express = require("express");
 const app = express();
+const http = require('http');
 const https = require("https").createServer({cert, ca, key}, app);
 const io = require("socket.io")(https);
 
@@ -42,6 +43,15 @@ main()
 
 
 async function main() {
+
+
+	const server = http.createServer((req, res) => {
+	  res.writeHead(301,{Location: `https://${req.headers.host}${req.url}`});
+	  res.end();
+	});
+
+	server.listen(80);
+
 	app.use(bodyParser.json());
 	app.use(bodyParser.urlencoded({ extended: true }));
 	app.use(express.static(__dirname + "/build"))

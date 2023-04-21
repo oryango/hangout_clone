@@ -135,14 +135,14 @@ export const videoCallSlice = createSlice({
 		remoteTrackFound: (state, action) => {
 			const { consumer, name, socketId, transportId } = action.payload
 
-			const queuedConsumer = state.consumerQueue.find((consumer) => consumer.socketId == socketId)
+			const queuedConsumer = state.consumerQueue.find((consumer) => consumer.socketId === socketId)
 
-			if(queuedConsumer == undefined) {
+			if(queuedConsumer === undefined) {
 				state.consumerQueue.push({socketId, name, transportId, consumer})
 			} else {
 				let audio
 				let video
-				if(consumer.kind == "video") {
+				if(consumer.kind === "video") {
 					video = {consumer, transportId}
 					audio = {consumer: queuedConsumer.consumer, transportId: queuedConsumer.transportId}
 				} else {
@@ -161,15 +161,15 @@ export const videoCallSlice = createSlice({
 		connectedConsumer: (state, action) => {
 			const { transportId } = action.payload
 
-			const queuedConsumer = state.consumerQueue.find((consumer) => consumer.transportId == transportId)
+			const queuedConsumer = state.consumerQueue.find((consumer) => consumer.transportId === transportId)
 
-			if(queuedConsumer == undefined) {
+			if(queuedConsumer === undefined) {
 				const filteredConsumer = state.consumers.find((consumer) => 
-					consumer.consumers.video.transportId == transportId || 
-					consumer.consumers.audio.transportId == transportId
+					consumer.consumers.video.transportId === transportId || 
+					consumer.consumers.audio.transportId === transportId
 					)
 
-				if(filteredConsumer.consumers.video.transportId == transportId) {
+				if(filteredConsumer.consumers.video.transportId === transportId) {
 					filteredConsumer.consumers.video.consumer.resume()
 				} else {
 					filteredConsumer.consumers.audio.consumer.resume()
@@ -223,7 +223,7 @@ export const videoCallSlice = createSlice({
 		consumerEnded: (state, action) => {
 			const { socketId } = action.payload
 			const filteredQueuedConsumers = state.consumerQueue.filter((consumer) => {
-				return consumer.socketId == socketId
+				return consumer.socketId === socketId
 			})
 			if(filteredQueuedConsumers.length > 0) {
 				const transportIds = {
@@ -238,7 +238,7 @@ export const videoCallSlice = createSlice({
 				})
 			} else {
 				const filteredConsumer = state.consumers.filter((consumer) => {
-					return consumer.socketId == socketId
+					return consumer.socketId === socketId
 				})
 
 				if(filteredConsumer.length > 0) {
@@ -254,7 +254,7 @@ export const videoCallSlice = createSlice({
 					filteredConsumer[0].consumers.audio.consumer.close()
 
 					state.consumers = state.consumers.filter((consumer) => {
-						return consumer.socketId != socketId
+						return consumer.socketId !== socketId
 					})
 				}
 			}

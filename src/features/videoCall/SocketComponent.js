@@ -111,7 +111,6 @@ export function SocketComponent(argument) {
       				console.log("connected")
       				break
       			case "failed":
-              toast(`Disconnected from call`)
       				transport.close()
       				console.log("failed")
       				break
