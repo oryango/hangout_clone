@@ -283,8 +283,8 @@ async function main() {
 
 	});
 
-	app.get("/.well-known/pki-validation/EDA48F9FCCAD21973C544DDBB9E0A944.txt", (req, res) => {
-		res.sendFile(__dirname + "/EDA48F9FCCAD21973C544DDBB9E0A944.txt")
+	app.get("/.well-known/pki-validation/38C7583452CCD06550CDBEFAB1534787.txt", (req, res) => {
+		res.sendFile(__dirname + "/38C7583452CCD06550CDBEFAB1534787.txt")
 	})
 
 	app.get("*", (req, res) => {
