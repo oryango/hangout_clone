@@ -24,7 +24,6 @@ export async function createDirectRoom(data) {
 };
 
 export async function createGroupRoom(data) {
-	console.log(data)
 	const response = await fetch(
 		"/create_group_room",
 		{

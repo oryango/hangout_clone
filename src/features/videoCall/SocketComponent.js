@@ -106,12 +106,12 @@ export function SocketComponent(argument) {
       	transport.on("connectionstatechange", (state)=> {
       		switch (state) {
       			case "connecting":
-      				//console.log("connecting")
       				break
       			case "connected":
       				console.log("connected")
       				break
       			case "failed":
+              toast(`Disconnected from call`)
       				transport.close()
       				console.log("failed")
       				break
@@ -138,10 +138,8 @@ export function SocketComponent(argument) {
       })
 
       socket.on("new-producer", ({producerIds}) => {
-        console.log("retrieving producers")
         if(producerIds !== null) {
           const { ids } = producerIds
-          console.log(ids)
           ids.forEach((id) => {
             dispatch(listenToProducer({name: id.name, socketId: id.socketId, producerId: id.producerId}))
           })
@@ -165,16 +163,12 @@ export function SocketComponent(argument) {
         transport.on("connectionstatechange", (state) => {
           switch (state) {
             case "connecting":
-              //console.log("connecting")
               break
             case "connected":
               dispatch(connectedConsumer({transportId: transport.id}))
               console.log("connected")
               break
             case "failed":
-              toast(`Disconnected from call`)
-              dispatch(streamClosed())
-              dispatch(callEnded())
               console.log("failed")
               break
             default:
@@ -215,7 +209,6 @@ export function SocketComponent(argument) {
       })
 
       socket.on("new-room-added", ({query}) => {
-        console.log("new-room-added")
         dispatch(newRoomAdded({query}))
       })
       socket.on("notification-message", async ({body}) => {
