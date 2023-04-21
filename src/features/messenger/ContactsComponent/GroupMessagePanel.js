@@ -28,7 +28,6 @@ export function GroupMessagePanel({senderEmail, senderId, senderName}) {
     if(errors.length == 0) {
       emailList.push(email)
       setEmail("")
-      console.log(emailList)
     } else {
       setErrors(errors)
     }
@@ -36,8 +35,6 @@ export function GroupMessagePanel({senderEmail, senderId, senderName}) {
 
 	const processCreateGroup = async () => {
 		const response = await dispatch(addGroupRoom({ emails: emailList, senderEmail, senderName, senderId, groupName}))
-		console.log(response)
-		
 		if(response.payload.state === "error_found") {
 	  		setErrors(response.payload.errors)
 	  } else {

@@ -183,9 +183,7 @@ export const messengerSlice = createSlice({
 			state.mode = action.payload;
 		},
 		receivedMessage: (state, action) => {
-			console.log(action.payload)
 			const { body } = action.payload
-			console.log(state.activeConversation == body.roomId) 
 			if(state.activeConversation == body.roomId)
 				state.messages.push(body)
 		},

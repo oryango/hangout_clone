@@ -43,7 +43,6 @@ export function MessageBoardInput() {
 
       setMessage("")
 
-      console.log(result)
       const body = {
         result,
         roomId,

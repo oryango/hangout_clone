@@ -82,8 +82,6 @@ export function MessageBoardHeader() {
 
   const handleIncomingCall = async (call) => {
     dispatch(incomingCall({call}))
-    console.log(call)
-
     const newRoom = await dispatch(findRoomIdByPhone({phoneNumber: call.parameters.From}))
     setCallingRoom(newRoom.chatId)
 

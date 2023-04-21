@@ -215,8 +215,6 @@ async function main() {
 				roomName: From,
 			}
 
-			console.log(result)
-
 			if(result.operation === "created") {
 				const roomInfo = await UserModel.updateUserSMS(result)
 				roomInfo.forEach(({userId, query}) => {
@@ -244,14 +242,12 @@ async function main() {
 
 	app.post("/voice", (req, res) => {
 		const { To, From, Caller, Direction } = req.body
-		console.log(req.body)
 		let twiml = new VoiceResponse()
 		//find if 
 		let receiver = null
 		let caller = null
 
 		onlineUsers.forEach((user) => {
-			console.log(user.phoneNumber)
 			if(To.includes(user.userId) || To == user.phoneNumber){
 				receiver = user
 			} else if(Caller.includes(user.userId) || From.includes(user.phoneNumber)) {
@@ -358,8 +354,6 @@ const socketEvents = io => {
 		})
 
 		socket.on("join-new-room", ({previousRoom, roomId}) => {
-			console.log(previousRoom)
-			console.log(roomId)
 			if(previousRoom !== null) {
 				socket.leave(previousRoom)
 			}

@@ -99,7 +99,7 @@ export const connectDevice = createAsyncThunk(
 
       call.on("disconnect", () => {
         console.log("call disconnected")
-        //dispatch(hangUp())
+        dispatch(hangUp())
       })
 
       call.on("cancel", () => {
@@ -108,7 +108,7 @@ export const connectDevice = createAsyncThunk(
 
       call.on("reject", () => {
         console.log("call rejected")
-        //dispatch(hangUp())
+        dispatch(hangUp())
       })
 
       call.on('error', (error) => {

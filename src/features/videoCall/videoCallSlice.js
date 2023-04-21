@@ -130,7 +130,6 @@ export const videoCallSlice = createSlice({
 			state.socket.emit("get-producers", {roomId: state.roomId})
 		},
 		listenToProducer: (state, action) => {
-			console.log("listening to producer")
 			state.socket.emit("create-consumer-transport", action.payload)
 		},
 		remoteTrackFound: (state, action) => {
@@ -223,7 +222,6 @@ export const videoCallSlice = createSlice({
 		},
 		consumerEnded: (state, action) => {
 			const { socketId } = action.payload
-			console.log(socketId)
 			const filteredQueuedConsumers = state.consumerQueue.filter((consumer) => {
 				return consumer.socketId == socketId
 			})
@@ -244,8 +242,6 @@ export const videoCallSlice = createSlice({
 				})
 
 				if(filteredConsumer.length > 0) {
-					console.log(filteredConsumer)
-					//document.querySelector(`#${socketId}`).remove()
 					const transportIds = {
 						transportIds: [
 							filteredConsumer[0].consumers.video.transportId,

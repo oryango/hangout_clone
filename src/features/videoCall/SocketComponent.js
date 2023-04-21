@@ -67,7 +67,6 @@ export function SocketComponent(argument) {
       })
 
       socket.on("log-in", ({token}) => {
-        console.log(token)
         dispatch(receivedToken({token}))
       })
 
@@ -90,7 +89,6 @@ export function SocketComponent(argument) {
 
       	transport.on("produce", async({kind, rtpParameters}, callback, errback) => {
           const {payload: roomId} = await dispatch(getRoom())
-          console.log(roomId)
       		const data = {
       			transportId: transport.id,
       			kind,
@@ -98,7 +96,6 @@ export function SocketComponent(argument) {
       			roomId,
             name,
       		}
-          console.log("roomId: " + roomId)
       		const { id } = await socket.emitWithAck("produce", data);
 
       		callback(id)
@@ -173,7 +170,9 @@ export function SocketComponent(argument) {
               console.log("connected")
               break
             case "failed":
-              transport.close()
+              toast(`Disconnected from call`)
+              dispatch(streamClosed())
+              dispatch(callEnded())
               console.log("failed")
               break
             default:
@@ -241,7 +240,6 @@ export function SocketComponent(argument) {
         if(foundRoom.payload && notInRoom.payload) {
           playMessage()
           const roomName = await dispatch(getRoomName({roomId: body.roomId}))
-          console.log(roomName)
           toast(`New message from ${roomName.payload}`, {onClick: () => {
             loadContact({roomName: roomName.payload, roomId: body.roomId})
           }})

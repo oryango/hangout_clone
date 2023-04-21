@@ -37,8 +37,6 @@ export function Register() {
 
     const created = await dispatch(createAccount(data));
 
-    console.log(created)
-
     if(created.payload.state === "error_found") {
       setError(created.payload.errors)
     } else if (created.payload.state === "success") {
