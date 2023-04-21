@@ -150,7 +150,7 @@ export const videoCallSlice = createSlice({
 					audio = {consumer, transportId}
 				}
 				state.consumers.push({socketId, name, consumers:{audio, video}})
-				state.consumerQueue = state.consumerQueue.filter((consumer) => consumer.socketId != socketId)
+				state.consumerQueue = state.consumerQueue.filter((consumer) => consumer.socketId !== socketId)
 			}
 		},
 		setRoomCall: (state, action) => {
@@ -234,7 +234,7 @@ export const videoCallSlice = createSlice({
 				state.socket.emit("stop-select-consumers", {transportIds})
 				filteredQueuedConsumers[0].consumer.close()
 				state.consumerQueue = state.consumerQueue.filter((consumer) => {
-					return consumer.socketId != socketId
+					return consumer.socketId !== socketId
 				})
 			} else {
 				const filteredConsumer = state.consumers.filter((consumer) => {

@@ -4,21 +4,15 @@ import notifSfx from '../../sounds/notification.mp3'
 import callSfx from '../../sounds/call.mp3'
 import { toast } from 'react-toastify';
 import {
-  createProducerTransport,
   socketSelector,
   deviceSelector,
   createdProducer,
-  recvTransportSelector,
   remoteTrackFound,
   listenToProducer,
   getRoom,
   openedWebcam,
   connectedConsumer,
-  videoToggleSelector,
-  audioToggleSelector,
   consumerEnded,
-  callEnded,
-  streamClosed,
 } from './videoCallSlice';
 import { 
   fullNameSelector, 
@@ -42,8 +36,6 @@ export function SocketComponent(argument) {
 	const device = useSelector(deviceSelector);
   const name = useSelector(fullNameSelector)
   const activeRoom = useSelector(roomSelector)
-  const videoEnabled = useSelector(videoToggleSelector)
-  const audioEnabled = useSelector(audioToggleSelector)
   const dispatch = useDispatch();
   const [playMessage] = useSound(notifSfx);
   const [playCall, { stop }] = useSound(callSfx);
@@ -226,7 +218,7 @@ export function SocketComponent(argument) {
         const headers = document.querySelectorAll(".chat-item")
         headers.forEach((header) => {
           const chatId = header.getAttribute("data-link")
-          if(chatId == currentActiveRoom) {
+          if(chatId === currentActiveRoom) {
             header.classList.add("active")
           }
         })
@@ -244,11 +236,11 @@ export function SocketComponent(argument) {
         const foundRoom = await dispatch(hasRoom({roomId}))
 
         if(foundRoom.payload) {
-          if(callType == "group") {
+          if(callType === "group") {
             toast(`A user has joined a call in ${groupName}`, {onClick: () => {
               loadContact({roomName: groupName, roomId})
             }})
-          } else if (callType == "direct") {
+          } else if (callType === "direct") {
             playCall()
             const roomName = await dispatch(getRoomName({roomId: roomId}))
             toast(`${roomName.payload} is calling you`, {onClick: ()=> {

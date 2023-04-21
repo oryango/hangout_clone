@@ -1,14 +1,11 @@
-import React, {useEffect, useState} from "react";
+import React, { useState} from "react";
 import {
 	createProducerTransport,
-	listenToProducer,
-	audioToggleSelector,
 	videoToggleSelector,
 	videoToggle,
 	getAllProducers,
 	callStarted,
 	roomIdSelector,
-	roomNameSelector,
 } from "../videoCallSlice"
 import { sendSystemMsg } from "../../messenger/messengerSlice"
 import { fullNameSelector } from "../../userCred/userCredSlice"
@@ -18,7 +15,6 @@ export function VideoPreview({callType}) {
 	const dispatch = useDispatch()
 	const videoEnabled = useSelector(videoToggleSelector)
 	const roomId = useSelector(roomIdSelector)
-	const roomName = useSelector(roomNameSelector)
 	const name = useSelector(fullNameSelector)
 	const [webcam, setWebcam] = useState(null)
 

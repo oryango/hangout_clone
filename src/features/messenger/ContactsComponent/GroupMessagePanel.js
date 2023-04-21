@@ -25,7 +25,7 @@ export function GroupMessagePanel({senderEmail, senderId, senderName}) {
         errors.push("Please input a valid email address")
     }
 
-    if(errors.length == 0) {
+    if(errors.length === 0) {
       emailList.push(email)
       setEmail("")
     } else {
@@ -44,7 +44,7 @@ export function GroupMessagePanel({senderEmail, senderId, senderName}) {
 
 	const removeEmail = toRemoveEmail => {
 	    const newEmailList = emailList.filter((email) => {
-	      return toRemoveEmail.email != email
+	      return toRemoveEmail.email !== email
 	    })
 	    setEmailList(newEmailList)
 	}

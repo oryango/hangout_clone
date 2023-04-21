@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { 
   sendMessage,
   sentMessage, 
-  receivedMessage, 
   roomSelector,
   conversationNameSelector,
   sendSMS, 

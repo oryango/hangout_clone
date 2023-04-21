@@ -1,10 +1,9 @@
-import React, {useEffect, useState} from "react";
+import React, { useState} from "react";
 import {
 	consumersSelector,
 	webcamSelector,
 	switchWebcamState,
 	switchMicState,
-	socketSelector,
 	videoToggleSelector,
 	audioToggleSelector,
 	callEnded,
@@ -18,7 +17,6 @@ import { useSelector, useDispatch } from "react-redux";
 export function InCallWindow({callType}) {
 	const dispatch = useDispatch()
 	const consumerArray = useSelector(consumersSelector);
-	const socket = useSelector(socketSelector);
 	const webcam = useSelector(webcamSelector)
 	const audioEnabled = useSelector(audioToggleSelector)
 	const videoEnabled = useSelector(videoToggleSelector)

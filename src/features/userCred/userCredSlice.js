@@ -33,7 +33,7 @@ export const verifyLogin = createAsyncThunk(
       errors.push("Password field is required")
     }
 
-    if(errors.length == 0) {
+    if(errors.length === 0) {
     	const response = await verifyUserCred({email, password});
 			return response;
     } else {
@@ -47,11 +47,10 @@ export const verifyLogin = createAsyncThunk(
 export const getSortedRooms = createAsyncThunk(
   "userCred/getSortedRooms",
   async ({conversationList},{getState}) => {
-    const state = getState()
     const response = await sortRooms({conversationList})
     const sortedIds = []
     response.body.sortedIds.forEach((id)=> { 
-     const contact = conversationList.find((unsortedId) => unsortedId.chatId == id._id)
+     const contact = conversationList.find((unsortedId) => unsortedId.chatId === id._id)
      sortedIds.push({name: contact.name, chatId: id._id, type: id.conversationType})
     })
     return {sortedIds}
@@ -63,7 +62,7 @@ export const getRoomName = createAsyncThunk(
   async ({roomId},{getState}) => {
     const state = getState()
     const roomName = state.userCred.conversationList.find((conversation) => {
-      return conversation.chatId == roomId
+      return conversation.chatId === roomId
     })
 
     return roomName.name
@@ -74,7 +73,7 @@ export const findRoomIdByPhone = createAsyncThunk(
   "userCred/findRoomIdByPhone",
   async ({phoneNumber}, {getState}) => {
     const state = getState()
-    const conversation = state.userCred.conversationList.find((conversation) => conversation.name == phoneNumber)
+    const conversation = state.userCred.conversationList.find((conversation) => conversation.name === phoneNumber)
     console.log(conversation)
     return conversation
   }
@@ -152,7 +151,7 @@ export const createAccount = createAsyncThunk(
     			errors.push("Passwords do not match")
     }
 
-    if(errors.length == 0) {
+    if(errors.length === 0) {
     	const response = await createUser(data);
 			return response;
     } else {
@@ -169,7 +168,7 @@ export const hasRoom = createAsyncThunk(
     const state = getState()
     const filterRoom = state.userCred.conversationList.filter((conversation) => {
       const { chatId } = conversation 
-      return chatId == roomId ? conversation : null
+      return chatId === roomId ? conversation : null
     })
     return filterRoom.length > 0 ? true : false
   }
@@ -260,7 +259,7 @@ export const userCredSlice = createSlice({
       console.log(body)
       let targetRoom
       const filterRooms = state.conversationList.filter((conversation) => {
-        if(body.roomId != conversation.chatId) {
+        if(body.roomId !== conversation.chatId) {
           return true
         } else {
           targetRoom = conversation

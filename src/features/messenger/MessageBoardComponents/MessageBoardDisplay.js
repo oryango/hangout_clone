@@ -1,12 +1,10 @@
-import React, {useEffect} from "react";
+import React from "react";
 import { conversationMessagesSelector } from "../messengerSlice";
-import { socketSelector } from "../../videoCall/videoCallSlice";
 import { idSelector } from "../../userCred/userCredSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 
 
 export function MessageBoardDisplay() {
-	const dispatch = useDispatch()
 	const messages = useSelector(conversationMessagesSelector);
 	const id = useSelector(idSelector);	
 

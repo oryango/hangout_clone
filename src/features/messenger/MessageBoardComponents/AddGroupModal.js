@@ -1,10 +1,7 @@
 import React, { useState } from "react";
-import { useSelector, useDispatch } from "react-redux"
-import {  } from "../../userCred/userCredSlice"
 
 
 export function AddGroupModal({closeModal}) {
-	const dispatch = useDispatch();
   	const [email, setEmail] = useState("")
   	const [errors, setErrors] = useState([])
 

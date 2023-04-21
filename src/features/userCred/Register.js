@@ -2,20 +2,15 @@ import React, { useState } from 'react';
 import {
   loggedIn,
   createAccount,
-  fullNameSelector,
-  idSelector,
   getSortedRooms,
 } from './userCredSlice';
 import { setsId } from "../messenger/messengerSlice";
 import { startMedia, logSocket } from "../videoCall/videoCallSlice";
-
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import './Login.css';
 
 export function Register() {
 	const dispatch = useDispatch()
-  const name = useSelector(fullNameSelector)
-  const userId = useSelector(idSelector)
 	const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");

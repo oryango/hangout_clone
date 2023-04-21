@@ -153,9 +153,9 @@ export function MessageBoardHeader() {
     dispatch(callRejected())
   }
 
-  const addUserToGroup = () => {
-    setAddUser(true)    
-  }
+  // const addUserToGroup = () => {
+  //   setAddUser(true)    
+  // }
 
   const closeModal = () => {
     setAddUser(false)
@@ -188,7 +188,7 @@ export function MessageBoardHeader() {
           <div className="d-flex">
             <div className="w-100 d-flex pl-0">
               {type !== null ? (
-                <img className="rounded-circle shadow avatar-sm mr-3 chat-profile-picture" src={
+                <img alt="Current chat profile picture" className="rounded-circle shadow avatar-sm mr-3 chat-profile-picture" src={
                   type === "direct" ? userProfile : 
                   type === "group" ? groupProfile : 
                   type === "sms" ? smsProfile : selfProfile} />
@@ -211,7 +211,7 @@ export function MessageBoardHeader() {
             ) : null}*/}
 
             {/*accept or reject call*/}
-            {call !== null && !callWindow && callingRoom == roomId ? ( <>
+            {call !== null && !callWindow && callingRoom === roomId ? ( <>
               <a className="rounded-circle btn btn-icon text-dark btn-light" onClick={()=>{
                 acceptCall()
               }}>

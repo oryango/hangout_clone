@@ -80,7 +80,7 @@ export function Contacts() {
         <div className="p-3 chat-header">
           <div className="d-flex">
             <div className="w-100 d-flex pl-0">
-              <img className="user-detail-trigger rounded-circle shadow avatar-sm mr-3 chat-profile-picture" src={userProfile} />
+              <img className="user-detail-trigger rounded-circle shadow avatar-sm mr-3 chat-profile-picture" alt="User profie" src={userProfile} />
             </div>
             <div className="flex-shrink-0 margin-auto">
               <a className="btn btn-sm btn-icon btn-light active text-dark ml-2" onClick={() => {createConversation()}}>

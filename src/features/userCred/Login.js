@@ -2,19 +2,15 @@ import React, { useState } from 'react';
 import {
   loggedIn,
   verifyLogin,
-  fullNameSelector,
-  idSelector,
   getSortedRooms,
 } from './userCredSlice';
 import { setsId } from "../messenger/messengerSlice";
 import { startMedia, logSocket } from "../videoCall/videoCallSlice";
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import './Login.css';
 
 export function Login() {
   const dispatch = useDispatch()
-  const name = useSelector(fullNameSelector)
-  const userId = useSelector(idSelector)
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setError] = useState([]);

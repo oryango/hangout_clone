@@ -8,7 +8,7 @@ import { SocketComponent } from "./features/videoCall/SocketComponent";
 import {
   loggedInSelector,
 } from './features/userCred/userCredSlice';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 
 function App() {
   const logInStatus = useSelector(loggedInSelector);

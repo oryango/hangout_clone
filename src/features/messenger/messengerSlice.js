@@ -39,7 +39,7 @@ export const addDirectRoom = createAsyncThunk(
 	    }
 
 
-		if(errors.length == 0) {
+		if(errors.length === 0) {
     		//const response = await createDirectRoom(data);
     		const response = await sendToServer(data, "/create_direct_room")
 			return response;
@@ -61,7 +61,7 @@ export const addGroupRoom = createAsyncThunk(
 			errors.push("Group name is required")
 		} 
 
-		if(emails.length == 0){
+		if(emails.length === 0){
 			errors.push("At least one email needs to added")
 		}
 
@@ -142,7 +142,7 @@ export const inRoom = createAsyncThunk(
 	"messenger/inRoom",
 	async ({roomId}, {getState}) => {
 		const state = getState()
-		const match = (state.messenger.activeConversation != roomId)
+		const match = (state.messenger.activeConversation !== roomId)
 		return match
 	}
 )
@@ -158,8 +158,6 @@ export const requestPhoneFromServer = createAsyncThunk(
 export const sendSystemMsg = createAsyncThunk(
 	"messenger/sendSystemMsg",
 	async ({name, roomId, stage}, {getState}) => {
-		const state = getState()
-
 		const data = {
 			message: `${name} ${stage} the call`,
 			senderName: "System",
@@ -184,7 +182,7 @@ export const messengerSlice = createSlice({
 		},
 		receivedMessage: (state, action) => {
 			const { body } = action.payload
-			if(state.activeConversation == body.roomId)
+			if(state.activeConversation === body.roomId)
 				state.messages.push(body)
 		},
 		joinedRoom: (state, action) => {
@@ -218,7 +216,7 @@ export const messengerSlice = createSlice({
 				const headers = document.querySelectorAll(".chat-item")
 				headers.forEach((header) => {
 					const chatId = header.getAttribute("data-link")
-					if(chatId == action.meta.arg.chatId) {
+					if(chatId === action.meta.arg.chatId) {
 						header.classList.add("active")
 					}
 				})
@@ -226,9 +224,10 @@ export const messengerSlice = createSlice({
 			.addCase(loadActiveConversation.fulfilled, (state, action) => {
 
 				const userData = action.payload.userData.filter((userData) => {
-					if(userData.user == state.personalId){
+					if(userData.user === state.personalId){
 						return userData
 					}
+					return null
 				})
 				state.messages = userData[0].messages
 				state.type = action.payload.conversationType
@@ -242,11 +241,12 @@ export const messengerSlice = createSlice({
 
 				const { state: success, room, name, newRoomId } = action.payload
 
-				if(success == "success"){
+				if(success === "success"){
 					const userData = room.userData.filter((userData) => {
-						if(userData.user == state.personalId){
+						if(userData.user === state.personalId){
 							return userData
 						}
+						return null
 					})
 
 					state.activeConversation = newRoomId
@@ -266,11 +266,12 @@ export const messengerSlice = createSlice({
 
 				const { state: success, room, name, newRoomId } = action.payload
 
-				if(success == "success"){
+				if(success === "success"){
 					const userData = room.userData.filter((userData) => {
-						if(userData.user == state.personalId){
+						if(userData.user === state.personalId){
 							return userData
 						}
+						return null
 					})
 					state.activeConversation = newRoomId
 					state.messages = userData[0].messages
@@ -288,12 +289,7 @@ export const messengerSlice = createSlice({
 			.addCase(addSMSRoom.fulfilled, (state, action) => {
 				const {state: success, room, newRoomId} = action.payload
 
-				if(success == "success") {
-					const userData = room.userData.filter((userData) => {
-						if(userData.user == state.personalId){
-							return userData
-						}
-					})
+				if(success === "success") {
 					state.activeConversation = newRoomId
 					state.messages = room.userData[0].messages
 					state.type = room.conversationType
@@ -307,8 +303,8 @@ export const messengerSlice = createSlice({
 			})
 
 			.addCase(sendSystemMsg.fulfilled, (state, action) => {
-				const { body, system, roomId } = action.payload.body
-				if(state.activeConversation == roomId)
+				const { roomId } = action.payload.body
+				if(state.activeConversation === roomId)
 					state.messages.push(action.payload.body)
 			})
 	},

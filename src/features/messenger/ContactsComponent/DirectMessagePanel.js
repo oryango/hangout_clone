@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { 
   phoneSelector,
   requestedPhone,
-  fullNameSelector,
-  idSelector,
 } from "../../userCred/userCredSlice";
 import {
   addDirectRoom, 
