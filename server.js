@@ -1,21 +1,23 @@
+const processConfig = require("./config");
 const bodyParser = require('body-parser');
 const mediasoup = require('mediasoup');
 const config = require('./server/config');
 const mongoose = require('mongoose');
 const UserModel = require('./server/models/User');
 const MessagesModel = require('./server/models/Messages');
-const mongoString = "mongodb+srv://admin:debtappearancetheorist@hangout.sobneka.mongodb.net/hangoutDB?retryWrites=true&w=majority"
 const ObjectID = require('mongodb').ObjectId
 const createWebRtcTransport = require("./server/services/createWebRtcTransport")
 const AccessToken = require('twilio').jwt.AccessToken;
 const VoiceResponse = require("twilio").twiml.VoiceResponse;
 const validator = require("validator");
+const mongoString = processConfig.mongoString
 
-const accountSid = "AC14ba204440b62fbe369ef028b48f5216";
-const authToken = "e4fdccfef4df6269e91df3a84a6b466e";
-const twilioApiKey = "SK1b71e8a5035f4f5a1aede3719c055bee";
-const twilioApiSecret = "Z9i1qauPSCHu8VRTeuJoWNKDQaADZnBp";
-const twiMLSid = "AP8b61844fca46a1464f8277c382528470";
+
+const accountSid = processConfig.accountSid;
+const authToken = processConfig.authToken;
+const twilioApiKey = processConfig.twilioApiKey;
+const twilioApiSecret = processConfig.twilioApiSecret;
+const twiMLSid = processConfig.twiMLSid;
 const client = require('twilio')(accountSid, authToken);
 
 const fs = require("fs");
