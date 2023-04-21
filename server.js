@@ -18,10 +18,15 @@ const twilioApiSecret = "Z9i1qauPSCHu8VRTeuJoWNKDQaADZnBp";
 const twiMLSid = "AP8b61844fca46a1464f8277c382528470";
 const client = require('twilio')(accountSid, authToken);
 
+const fs = require("fs");
+const cert = fs.readFileSync('./ssl/certificate.crt');
+const ca = fs.readFileSync('./ssl/ca_bundle.crt');
+const key = fs.readFileSync('./ssl/private.key');
+
 const express = require("express");
 const app = express();
-const http = require("http").Server(app);
-const io = require("socket.io")(http);
+const https = require("https").createServer({cert, ca, key}, app);
+const io = require("socket.io")(https);
 
 let onlineUsers = []  // {socketId: socket.id, name: fullName, userId: objectId, status: "available" | "busy" | "chatonly", phoneNumber: number}
 let mediasoupRouter = null;
@@ -30,6 +35,9 @@ let consumerTransport = []; //{socketId, transport}
 let producerIds = []  // {ids: [{producerId, name, socketId}], roomId}
 
 const PORT = 80;
+
+
+
 
 main()
 
@@ -279,7 +287,7 @@ async function main() {
 	  res.sendFile(__dirname + "/build/index.html");
 	});
 
-	http.listen(PORT, () => {
+	https.listen(PORT, () => {
 	  console.log(`listening on ${PORT}`);
 	});
 }
