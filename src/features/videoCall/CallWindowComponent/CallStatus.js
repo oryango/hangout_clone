@@ -31,7 +31,7 @@ export function CallStatus() {
 
 	const muteMic = () => {
 		setAudio(!audioEnabled)
-		dispatch(setPhoneMic(audioEnabled))
+		dispatch(setPhoneMic({audioEnabled}))
 	}
 
 	const endCall = () => {
