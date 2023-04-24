@@ -8,6 +8,7 @@ import {
 	audioToggleSelector,
 	callEnded,
 	roomIdSelector,
+  	streamClosed, 
 } from "./videoCallSlice";
 import { fullNameSelector } from "../userCred/userCredSlice"
 import { sendSystemMsg } from "../messenger/messengerSlice"
@@ -26,6 +27,7 @@ export function InCallWindow({callType}) {
 
 	const leaveCall = () => {
 		dispatch(callEnded())
+    	dispatch(streamClosed())
 		dispatch(sendSystemMsg({name, roomId, stage: "left"}))
 	}
 
