@@ -14,6 +14,7 @@ import {
   consumerEnded,
   openedWebcam,
   getWebcamStream,
+  setWebcam,
 } from './videoCallSlice';
 import { 
   fullNameSelector, 
@@ -112,8 +113,12 @@ export function SocketComponent(argument) {
       		} 
       	})
 
-        const stream = await dispatch(getWebcamStream())
-        console.log(stream)
+        let stream = await dispatch(getWebcamStream())
+
+        if(!stream.payload.active){
+          stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true})
+          dispatch(setWebcam({webcam: stream}))
+        }
 
         let track 
         if(type === "video") {
