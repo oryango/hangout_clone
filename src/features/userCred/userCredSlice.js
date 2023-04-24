@@ -218,7 +218,7 @@ export const userCredSlice = createSlice({
 
     setPhoneMic: (state, action) => {
       const { audioEnabled } = action.payload
-      state.device.audio.outgoing(false)
+      state.device.audio.outgoing(audioEnabled)
     },
 
     incomingCall: (state, action) => {
