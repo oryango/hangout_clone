@@ -113,6 +113,7 @@ export function SocketComponent(argument) {
       	})
 
         const stream = await dispatch(getWebcamStream())
+        console.log(stream)
 
         let track 
         if(type === "video") {
