@@ -52,6 +52,7 @@ export function CallStatus() {
 					</button> 
 				</section>
 			) : ( <>
+				<h3> Please allow mic access in the main browser to continue. Diregard if already allowed </h3>
 				<section className="video-btn-section"> 
 					<button className="video-btn rounded-circle btn btn-light btn-icon text-dark" onClick={()=>{
 						muteMic()
