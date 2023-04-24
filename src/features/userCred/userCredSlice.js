@@ -74,7 +74,6 @@ export const findRoomIdByPhone = createAsyncThunk(
   async ({phoneNumber}, {getState}) => {
     const state = getState()
     const conversation = state.userCred.conversationList.find((conversation) => conversation.name === phoneNumber)
-    console.log(conversation)
     return conversation
   }
 );
@@ -179,7 +178,6 @@ export const userCredSlice = createSlice({
 	initialState,
 	reducers: {
 		loggedIn: (state, action) => {
-      console.log(action.payload)
 			const { 
         email,
         _id, 

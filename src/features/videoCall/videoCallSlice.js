@@ -11,6 +11,7 @@ const initialState = {
   roomName: null, 		//name of current room
 	micProducer: null, 	// producer for mic
 	webcamProducer: null, //producer for webcam
+	webcamStream: null,
   mic: null, 					//stream for mic
   webcam: null, 			//stream for webcam
 	consumers: [],			//{ socketId, name, consumers:{audio:{consumer, transportId: transport}, video:{consumer,transportId: transport}} }
@@ -30,6 +31,14 @@ export const getRoom = createAsyncThunk(
 	}
 )
 
+export const getWebcamStream = createAsyncThunk(
+	"videoCall/getWebcamStream",
+	async (data, { getState }) => {
+		const state = getState()
+		return state.videoCall.webcamStream
+	}
+)
+
 export const videoCallSlice = createSlice({
 	name: "videoCall",
 	initialState,
@@ -43,6 +52,7 @@ export const videoCallSlice = createSlice({
 			state.roomId = null
 			state.micProducer = null
 			state.webcamProducer = null
+			state.webcamStream = null
 			state.mic = null
 			state.webcam = null
 			state.consumers = []
@@ -56,13 +66,15 @@ export const videoCallSlice = createSlice({
 			state.socket.emit("log-in", {name, userId, phoneNumber})
 		},
 		streamClosed: (state, action) => {
-			if(state.webcam !== null && state.webcam !== undefined) {
-				const tracks = state.webcam.getTracks();
+			if(state.webcamStream !== null && state.webcamStream !== undefined) {
+				const tracks = state.webcamStream.getTracks();
 
 			  tracks.forEach((track) => {
 			    track.stop();
 			  });
 				state.webcam = null
+				state.webcamStream = null
+				state.mic = null
 			}
 		},
 		createProducerTransport: (state, action) => {
@@ -87,11 +99,6 @@ export const videoCallSlice = createSlice({
 		  }))
 
 		},
-		openedWebcam: (state, action) => {
-			const stream = new MediaStream()
-			stream.addTrack(action.payload)
-			state.webcam = stream
-		},
 		switchWebcamState: (state, action) => {
 			if(state.videoEnabled) {
 				state.webcamProducer.pause()
@@ -99,9 +106,8 @@ export const videoCallSlice = createSlice({
 				state.webcamProducer.resume()
 			}
 			state.videoEnabled = !state.videoEnabled
-
-			//state.socket.emit("producer-paused", {roomId: state.roomId})
 		},
+
 		switchMicState: (state, action) => {
 			if(state.audioEnabled){
 				state.micProducer.pause()
@@ -179,6 +185,21 @@ export const videoCallSlice = createSlice({
 			}
 
 		},
+
+		setWebcam: (state, action) => {
+			const { webcam } = action.payload
+			const stream = new MediaStream()
+			stream.addTrack(webcam.getVideoTracks()[0])
+			state.webcam = stream
+			state.webcamStream = webcam
+		}, 
+
+		openedWebcam: (state, action) => {
+			const stream = new MediaStream()
+			stream.addTrack(action.payload)
+			state.webcam = stream
+		},
+
 		callStarted: (state, action) => {
 			state.audioEnabled = false
 			state.videoEnabled = false
@@ -189,14 +210,6 @@ export const videoCallSlice = createSlice({
 			state.videoEnabled = false
 			state.direction = false
 			state.inCall = false
-			if(state.mic !== null) {
-				state.mic.stop()
-				state.mic = null
-			}
-			if(state.webcam !== null) {
-				state.webcam.getVideoTracks()[0].stop()
-				state.webcam = null
-			}
 			if(state.webcamProducer !== null){
 				state.socket.emit("stop-producers")
 				state.webcamProducer.close()
@@ -271,7 +284,6 @@ export const {
 	logSocket,
 	streamClosed,
 	createProducerTransport, 
-	openedWebcam,
 	switchWebcamState,
 	switchMicState,
 	micToggle,
@@ -281,7 +293,9 @@ export const {
 	listenToProducer, 
 	remoteTrackFound,
 	setRoomCall,	
+	openedWebcam,
 	connectedConsumer,
+	setWebcam,
 	callStarted,
 	callEnded,
 	consumerEnded,

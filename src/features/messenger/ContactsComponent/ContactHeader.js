@@ -38,20 +38,10 @@ export function ContactHeader({conversation}) {
             type === "sms" ? smsProfile : selfProfile} />
           <div>
             <p className="margin-auto fw-400 text-dark-75">{ name }</p>
-            <div className="d-flex flex-row mt-1">
-              {/*<span>
-                <div className="svg15 double-check"></div>
-              </span>*/}
-            </div>
           </div>
         </div>
       </div>
-      {/*<div className="flex-shrink-0 margin-auto pl-2 pr-3">
-        <div className="d-flex flex-column">
-          <p className="text-muted text-right fs-13 mb-2">08:21</p>
-          <span className="round badge badge-light-success margin-auto">2</span>
-        </div>
-      </div>*/}
+
     </div>
 	)
 };

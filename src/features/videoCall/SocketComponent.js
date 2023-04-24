@@ -10,9 +10,10 @@ import {
   remoteTrackFound,
   listenToProducer,
   getRoom,
-  openedWebcam,
   connectedConsumer,
   consumerEnded,
+  openedWebcam,
+  getWebcamStream,
 } from './videoCallSlice';
 import { 
   fullNameSelector, 
@@ -111,16 +112,14 @@ export function SocketComponent(argument) {
       		} 
       	})
 
-        const stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true})
+        const stream = await dispatch(getWebcamStream())
 
         let track 
         if(type === "video") {
-          track = stream.getVideoTracks()[0]
-          stream.getAudioTracks()[0].stop()
+          track = stream.payload.getVideoTracks()[0]
           dispatch(openedWebcam(track))
         } else {
-          track = stream.getAudioTracks()[0]
-          stream.getVideoTracks()[0].stop()
+          track = stream.payload.getAudioTracks()[0]
         }
 				const producer = await transport.produce({ track })
 

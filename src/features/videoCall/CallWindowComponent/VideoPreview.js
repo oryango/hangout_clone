@@ -9,7 +9,11 @@ import {
 } from "../videoCallSlice"
 import { sendSystemMsg } from "../../messenger/messengerSlice"
 import { fullNameSelector } from "../../userCred/userCredSlice"
+import useSound from 'use-sound'
+import notifSfx from '../../../sounds/cameraNotice.mp3'
 import { useSelector, useDispatch } from "react-redux";
+import { toast } from 'react-toastify';
+
 
 export function VideoPreview({callType}) {
 	const dispatch = useDispatch()
@@ -17,6 +21,15 @@ export function VideoPreview({callType}) {
 	const roomId = useSelector(roomIdSelector)
 	const name = useSelector(fullNameSelector)
 	const [webcam, setWebcam] = useState(null)
+  	const [playMessage] = useSound(notifSfx);
+
+
+	const allowWebcamAlert = (allowedWebcam) => {
+		if(!allowedWebcam) {
+			playMessage()
+			toast(`Please allow webcam access to continue`)
+		}
+	}
 
 	const toggleVideoStream = async () => {
 		let stream
@@ -29,9 +42,13 @@ export function VideoPreview({callType}) {
 		  });
 		  setWebcam(null)
 		} else {
+			let allowedWebcam = false
+			const webcamTimeout = setTimeout(() => {allowWebcamAlert(allowedWebcam)}, 1000);
 			stream = await navigator.mediaDevices.getUserMedia({video: true, audio: false})
+			allowedWebcam = true
+			
 		}
-    setWebcam(stream)
+    	setWebcam(stream)
 		dispatch(videoToggle())
 	}
 
@@ -44,8 +61,6 @@ export function VideoPreview({callType}) {
 		dispatch(createProducerTransport({callType}))
 		dispatch(callStarted())
 		dispatch(sendSystemMsg({name, roomId, stage: "joined"}))
-		//await dispatch(getAllProducers({roomId}))
-		//dispatch(listenToProducer())
 	}
 
 	return (<>

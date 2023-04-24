@@ -14,6 +14,7 @@ import {
   callEnded,
   roomIdSelector,
   socketSelector,
+  setWebcam,
 } from "../../videoCall/videoCallSlice"
 import { 
   fullNameSelector, 
@@ -57,7 +58,6 @@ export function MessageBoardHeader() {
   const phoneDevice = useSelector(phoneDeviceSelector)
 
   const [callWindow, setCallWindow] = useState(false)
-  const [addUser, setAddUser] = useState(false)
   const [callType, setCallType] = useState("")
   const [callingRoom, setCallingRoom] = useState()
 
@@ -123,7 +123,9 @@ export function MessageBoardHeader() {
     if(!callWindow) {
       if((type === "sms" && phoneReady === "registered") || type !== "sms"){
         dispatch(setRoomCall({roomId, roomName:conversationName, direction: true }))
-      }
+      }      
+      const webcam = await navigator.mediaDevices.getUserMedia({video: true, audio: true})
+      dispatch(setWebcam({webcam}))
       setCallType(type)
       setCallWindow(true)
     }
@@ -153,21 +155,13 @@ export function MessageBoardHeader() {
     dispatch(callRejected())
   }
 
-  // const addUserToGroup = () => {
-  //   setAddUser(true)    
-  // }
-
-  const closeModal = () => {
-    setAddUser(false)
-  }
-
 	return (
 		<div className="p-3 chat-header">
           { callWindow ? 
             <NewWindow 
               title={`Calling ${conversationName}`}
               onBlock={()=>{
-                console.log("allow pop up")
+                alert("Please allow pop-up to use call function.")
               }}
               onUnload={()=>{
                 closeWindow()
@@ -177,13 +171,6 @@ export function MessageBoardHeader() {
               {inCall ? <InCallWindow callType={callType} />  : <CallWindow callType={callType}/>}
             </NewWindow> : 
             null 
-          }
-          {
-            addUser ? (
-              <div className="add-user-container">
-                <AddGroupModal closeModal={closeModal}/>             
-              </div>
-            ) : null
           }
           <div className="d-flex">
             <div className="w-100 d-flex pl-0">
@@ -195,40 +182,29 @@ export function MessageBoardHeader() {
                 ) : null}
               <div className="mr-3">
                 <p className="fw-400 mb-0 text-dark-75">{conversationName}</p>
-                {/*<p className="sub-caption text-muted text-small mb-0"><i className="la la-clock mr-1"></i>last seen today at 09:15 PM</p>*/}
               </div>
             </div>
             <div className="flex-shrink-0 margin-auto">
 
-            {/*add to group button*/}
-           {/* {type == "group" ? (
-              <a className="rounded-circle btn btn-icon text-dark btn-light" onClick={()=>{
-                addUserToGroup()
-              }}>
-                <i class="las la-plus chat-icon"></i>
-              </a>
-
-            ) : null}*/}
-
             {/*accept or reject call*/}
             {call !== null && !callWindow && callingRoom === roomId ? ( <>
-              <a className="rounded-circle btn btn-icon text-dark btn-light" onClick={()=>{
+              <a className="btn btn-sm btn-icon text-dark btn-light" onClick={()=>{
                 acceptCall()
               }}>
-                <i class="las la-phone chat-icon"></i>
+                <i class="las la-phone chat-icon answer-icon"></i>
               </a>
 
-              <a className="rounded-circle btn btn-icon text-dark btn-light" onClick={()=>{
+              <a className="btn btn-sm btn-icon text-dark btn-light" onClick={()=>{
                 rejectCall()
               }}>
-                <i class="las la-phone-slash chat-icon"></i>
+                <i class="las la-phone-slash chat-icon reject-icon"></i>
               </a>
 
             </>) : null}
 
             {/*call function - not available to self rooms*/}
             {type !== null && type !== "self" && !callWindow && call === null ? (
-              <a className="rounded-circle btn btn-icon text-dark btn-light" onClick={()=>{
+              <a className="btn btn-sm btn-icon text-dark btn-light" onClick={()=>{
                 displayCallWindow()
               }}>
                 { type !== "sms" ?
@@ -236,19 +212,8 @@ export function MessageBoardHeader() {
                     <polygon points="23 7 16 12 23 17 23 7"></polygon>
                     <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
                   </svg>) : 
-                  phoneReady === "registered" ? <i class="las la-phone chat-icon"></i> : <i class="las la-phone-slash chat-icon"></i>
+                  phoneReady === "registered" ? <i class="las la-phone chat-icon"></i> : null
                 }
-              </a>
-            ) : null}
-
-            {/*empty settings button*/}
-            { type !== null ? (
-              <a className="rounded-circle btn btn-icon text-dark btn-light">
-                <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" className="feather">
-                  <circle cx="12" cy="12" r="1"></circle>
-                  <circle cx="12" cy="5" r="1"></circle>
-                  <circle cx="12" cy="19" r="1"></circle>
-                </svg>
               </a>
             ) : null}
             </div>
