@@ -116,8 +116,8 @@ export function SocketComponent(argument) {
         let stream = await dispatch(getWebcamStream())
 
         if(stream.payload === null){
-          stream = await navigator.mediaDevices.getUserMedia({video: true, audio: true})
-          dispatch(setWebcam({webcam: stream}))
+          stream.payload = await navigator.mediaDevices.getUserMedia({video: true, audio: true})
+          dispatch(setWebcam({webcam: stream.payload}))
         }
 
         let track 
